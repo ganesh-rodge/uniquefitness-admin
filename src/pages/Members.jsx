@@ -171,7 +171,7 @@ const Members = () => {
           <p className="text-gray-400 mt-2">Manage gym members and their details</p>
         </div>
         <div className="mt-4 sm:mt-0">
-          <button className="bg-primary hover:bg-yellow-300 text-gray-900 font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center">
+          <button className="bg-primary cursor-pointer bg-yellow-300 text-gray-900 font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center">
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>

@@ -191,7 +191,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-black bg-primary hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
+                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-black bg-primary cursor-pointer bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
               >
                 {isLoading ? (
                   <div className="flex items-center">
@@ -210,7 +210,7 @@ const Login = () => {
               <button
                 type="button"
                 onClick={handleForgotPassword}
-                className="w-full text-center text-sm text-primary hover:text-yellow-300 transition-colors duration-200"
+                className="w-full text-center text-sm text-primary text-white cursor-pointer hover:text-yellow-300 transition-colors duration-200"
               >
                 Forgot your password?
               </button>
@@ -246,7 +246,7 @@ const Login = () => {
                     type="button"
                     onClick={handleSendOtp}
                     disabled={otpLoading}
-                    className="px-6 py-3 bg-primary hover:bg-yellow-300 text-black font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    className="px-6 py-3 bg-primary cursor-pointer bg-yellow-300 text-black font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                   >
                     {otpLoading ? 'Sending...' : 'Send OTP'}
                   </button>
@@ -288,7 +288,7 @@ const Login = () => {
                 type="button"
                 onClick={handleUpdatePassword}
                 disabled={isLoading}
-                className="w-full py-3 px-4 bg-primary hover:bg-yellow-300 text-black font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 px-4 bg-primary cursor-pointer bg-yellow-300 text-black font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Updating...' : 'Update Password'}
               </button>
