@@ -10,6 +10,7 @@ import ChangePassword from './pages/ChangePassword';
 import Layout from './components/Layout';
 import DietPlans from './pages/DietPlans';
 import CreateDietPlan from './pages/CreateDietPlan';
+import Workout from './pages/Workout';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -59,21 +60,29 @@ export default function App() {
             </ProtectedRoute>
           } />
 
-            <Route path="/diet-plans" element={
-              <ProtectedRoute>
-                <Layout>
-                  <DietPlans />
-                </Layout>
-              </ProtectedRoute>
-            } />
+          <Route path="/diet-plans" element={
+            <ProtectedRoute>
+              <Layout>
+                <DietPlans />
+              </Layout>
+            </ProtectedRoute>
+          } />
 
-            <Route path="/create-diet-plan" element={
-              <ProtectedRoute>
-                <Layout>
-                  <CreateDietPlan />
-                </Layout>
-              </ProtectedRoute>
-            } />
+          <Route path="/create-diet-plan" element={
+            <ProtectedRoute>
+              <Layout>
+                <CreateDietPlan />
+              </Layout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/workout" element={
+            <ProtectedRoute>
+              <Layout>
+                <Workout />
+              </Layout>
+            </ProtectedRoute>
+          } />
 
           <Route path="/members/:id" element={
             <ProtectedRoute>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -35,18 +35,6 @@ const Sidebar = ({ isOpen, onClose }) => {
       path: '/plans'
     },
     {
-      name: 'Announcements',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-        </svg>
-      ),
-      path: '/announcements'
-    }
-  ];
-
-    // Add Diet Plans menu item
-    menuItems.splice(3, 0, {
       name: 'Diet Plans',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -54,129 +42,106 @@ const Sidebar = ({ isOpen, onClose }) => {
         </svg>
       ),
       path: '/diet-plans'
-    });
+    },
+    {
+      name: 'Announcements',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+        </svg>
+      ),
+      path: '/announcements'
+    },
+    {
+      name: 'Workout',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      ),
+      path: '/workout'
+    }
+  ];
 
   const handleNavigate = (path) => {
     navigate(path);
-    onClose();
+    if (onClose) onClose();
   };
 
   const handleLogout = () => {
-    // Clear any auth tokens/data here
     localStorage.removeItem('authToken');
     navigate('/');
-    onClose();
+    if (onClose) onClose();
   };
 
   return (
     <>
       {/* Desktop sidebar */}
-      <div className={`
-        hidden lg:flex lg:flex-shrink-0 lg:w-64 bg-gray-900 border-r border-gray-700
-      `}>
-        <div className="flex flex-col w-full">
-          {/* Logo */}
+      <div className="hidden lg:flex lg:flex-shrink-0 lg:w-64 bg-gray-900 border-r border-gray-700 h-screen">
+        <div className="flex flex-col w-full h-full">
           <div className="flex items-center justify-center h-16 px-4 bg-gray-900 border-b border-gray-700">
-            <img 
-              src="/logoFull.jpeg" 
-              alt="Unique Fitness" 
-              className="h-10 w-auto"
-            />
+            <img src="/logoFull.jpeg" alt="Logo" className="h-10 w-auto rounded-lg" />
           </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 px-2 py-4 space-y-2">
-            {menuItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <button
-                  key={item.name}
-                  onClick={() => handleNavigate(item.path)}
-                  className={`
-                    w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all duration-200
-                    ${isActive 
-                      ? 'bg-yellow-400 text-gray-900' 
-                      : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                    }
-                  `}
-                >
-                  <span className="mr-3">{item.icon}</span>
-                  {item.name}
-                </button>
-              );
-            })}
-
-            {/* Logout button */}
+          <nav className="flex-1 py-4 px-2 space-y-2 overflow-y-auto">
+            {menuItems.map((item) => (
+              <button
+                key={item.name}
+                onClick={() => handleNavigate(item.path)}
+                className={`w-full flex items-center px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition-all duration-200 ${location.pathname === item.path ? 'bg-gray-800 font-bold text-white' : ''}`}
+              >
+                <span className="mr-3">{item.icon}</span>
+                {item.name}
+              </button>
+            ))}
+          </nav>
+          <div className="px-4 pb-4">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center px-3 py-3 text-sm font-medium text-gray-300 rounded-lg hover:bg-red-600 hover:text-white transition-all duration-200 mt-8"
+              className="w-full flex items-center px-4 py-3 rounded-lg text-red-400 hover:bg-gray-800 transition-all duration-200"
             >
-              <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
+              <span className="mr-3">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7" />
+                </svg>
+              </span>
               Logout
             </button>
-          </nav>
+          </div>
         </div>
       </div>
-
       {/* Mobile sidebar */}
-      <div className={`
-        lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 border-r border-gray-700 transform transition-transform duration-300 ease-in-out
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        <div className="flex flex-col w-full h-full">
-          {/* Logo and close button */}
-          <div className="flex items-center justify-between h-16 px-4 bg-gray-900 border-b border-gray-700">
-            <img 
-              src="/logoFull.jpeg" 
-              alt="Unique Fitness" 
-              className="h-10 w-auto"
-            />
-            <button
-              onClick={onClose}
-              className="text-gray-300 hover:text-white focus:outline-none"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+      <div className={`fixed inset-0 z-50 flex lg:hidden transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="w-64 bg-gray-900 border-r border-gray-700 flex flex-col h-full">
+          <div className="flex items-center justify-center h-16 px-4 bg-gray-900 border-b border-gray-700">
+            <img src="/logoFull.jpeg" alt="Logo" className="h-10 w-auto rounded-lg" />
           </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 px-2 py-4 space-y-2">
-            {menuItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <button
-                  key={item.name}
-                  onClick={() => handleNavigate(item.path)}
-                  className={`
-                    w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all duration-200
-                    ${isActive 
-                      ? 'bg-yellow-400 text-gray-900' 
-                      : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                    }
-                  `}
-                >
-                  <span className="mr-3">{item.icon}</span>
-                  {item.name}
-                </button>
-              );
-            })}
-
-            {/* Logout button */}
+          <nav className="flex-1 py-4 px-2 space-y-2 overflow-y-auto">
+            {menuItems.map((item) => (
+              <button
+                key={item.name}
+                onClick={() => handleNavigate(item.path)}
+                className={`w-full flex items-center px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition-all duration-200 ${location.pathname === item.path ? 'bg-gray-800 font-bold text-white' : ''}`}
+              >
+                <span className="mr-3">{item.icon}</span>
+                {item.name}
+              </button>
+            ))}
+          </nav>
+          <div className="px-4 pb-4">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center px-3 py-3 text-sm font-medium text-gray-300 rounded-lg hover:bg-red-600 hover:text-white transition-all duration-200 mt-8"
+              className="w-full flex items-center px-4 py-3 rounded-lg text-red-400 hover:bg-gray-800 transition-all duration-200"
             >
-              <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
+              <span className="mr-3">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7" />
+                </svg>
+              </span>
               Logout
             </button>
-          </nav>
+          </div>
         </div>
+        <div className="flex-1 bg-black bg-opacity-50" onClick={onClose}></div>
       </div>
     </>
   );
