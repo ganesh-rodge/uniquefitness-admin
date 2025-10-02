@@ -154,7 +154,7 @@ const ChangePassword = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 py-3 px-4 bg-primary hover:bg-yellow-300 text-black font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="flex-1 py-3 px-4 bg-primary cursor-pointer bg-yellow-300 text-black font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {isLoading ? (
                   <div className="flex items-center">

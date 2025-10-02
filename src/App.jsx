@@ -8,6 +8,8 @@ import Plans from './pages/Plans';
 import Announcements from './pages/Announcements';
 import ChangePassword from './pages/ChangePassword';
 import Layout from './components/Layout';
+import DietPlans from './pages/DietPlans';
+import CreateDietPlan from './pages/CreateDietPlan';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -56,6 +58,22 @@ export default function App() {
               </Layout>
             </ProtectedRoute>
           } />
+
+            <Route path="/diet-plans" element={
+              <ProtectedRoute>
+                <Layout>
+                  <DietPlans />
+                </Layout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/create-diet-plan" element={
+              <ProtectedRoute>
+                <Layout>
+                  <CreateDietPlan />
+                </Layout>
+              </ProtectedRoute>
+            } />
 
           <Route path="/members/:id" element={
             <ProtectedRoute>

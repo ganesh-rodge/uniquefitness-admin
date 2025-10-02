@@ -45,6 +45,17 @@ const Sidebar = ({ isOpen, onClose }) => {
     }
   ];
 
+    // Add Diet Plans menu item
+    menuItems.splice(3, 0, {
+      name: 'Diet Plans',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      ),
+      path: '/diet-plans'
+    });
+
   const handleNavigate = (path) => {
     navigate(path);
     onClose();
