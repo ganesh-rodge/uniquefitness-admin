@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { adminLogin } from '../api';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -36,10 +36,7 @@ const Login = () => {
     setSuccess('');
 
     try {
-      const res = await axios.post('https://uniquefitness.onrender.com/api/v1/admin/login', {
-        email: formData.email,
-        password: formData.password
-      });
+      const res = await adminLogin(formData.email, formData.password);
       console.log('Full login response:', res);
       if (res.data && res.data.data && res.data.data.accessToken) {
         localStorage.setItem('authToken', res.data.data.accessToken);

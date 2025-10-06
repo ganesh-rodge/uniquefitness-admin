@@ -1,4 +1,4 @@
-// API utility for Unique Fitness admin panel
+
 import axios from 'axios';
 
 const BASE_URL = 'https://uniquefitness.onrender.com/api/v1';
@@ -7,6 +7,11 @@ const api = axios.create({
   baseURL: BASE_URL,
   withCredentials: true, // if you need cookies for auth
 });
+
+// Admin login (returns token and admin info)
+export const adminLogin = async (email, password) => {
+  return api.post('/admin/login', { email, password });
+};
 
 // Example: Add video for muscle group
 export const addMuscleVideo = async (muscle, link) => {
