@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -14,7 +15,10 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -29,20 +33,27 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setSuccess('');
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo purposes, any email/password combination works
-      if (formData.email && formData.password) {
-        localStorage.setItem('authToken', 'demo-token');
-        navigate('/dashboard');
+      const res = await axios.post('https://uniquefitness.onrender.com/api/v1/admin/login', {
+        email: formData.email,
+        password: formData.password
+      });
+      console.log('Full login response:', res);
+      if (res.data && res.data.data && res.data.data.accessToken) {
+        localStorage.setItem('authToken', res.data.data.accessToken);
+        setSuccess(res.data.message || 'Admin logged in successfully!');
+        setError('');
+        console.log('Admin Info:', res.data.data.admin);
+        setTimeout(() => navigate('/dashboard'), 700);
       } else {
-        setError('Please enter both email and password');
+        setError(res.data?.message || 'Invalid credentials');
+        setSuccess('');
       }
     } catch (err) {
-      setError('Login failed. Please try again.');
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      setSuccess('');
     } finally {
       setIsLoading(false);
     }
@@ -160,24 +171,45 @@ const Login = () => {
               </div>
 
               {/* Password */}
-              <div>
+              <div className="relative">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
                   Password
                 </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className="appearance-none relative block w-full px-4 py-3 border border-gray-600 placeholder-gray-400 text-white bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:z-10 transition-all duration-200 sm:text-sm"
-                  placeholder="Enter your password"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showLoginPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    required
+                    className="appearance-none block w-full px-4 py-3 border border-gray-600 placeholder-gray-400 text-white bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:z-10 transition-all duration-200 sm:text-sm"
+                    placeholder="Enter your password"
+                    value={formData.password}
+                    onChange={handleChange}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-20 text-gray-400 hover:text-white focus:z-30"
+                    tabIndex={-1}
+                    onClick={() => setShowLoginPassword((v) => !v)}
+                    aria-label={showLoginPassword ? "Hide password" : "Show password"}
+                  >
+                    {showLoginPassword ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10a9.96 9.96 0 012.122-6.13M6.13 6.13A9.96 9.96 0 0112 3c5.523 0 10 4.477 10 10a9.96 9.96 0 01-1.17 4.61M17.87 17.87A9.96 9.96 0 0112 21c-5.523 0-10-4.477-10-10a9.96 9.96 0 012.122-6.13" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 18" /></svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
+            {/* Success message */}
+            {success && (
+              <div className="bg-green-900 border border-green-700 text-green-300 px-4 py-3 rounded-lg text-sm">
+                {success}
+              </div>
+            )}
             {/* Error message */}
             {error && (
               <div className="bg-red-900 border border-red-700 text-red-300 px-4 py-3 rounded-lg text-sm">
@@ -269,18 +301,33 @@ const Login = () => {
               </div>
 
               {/* New Password Field */}
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   New Password
                 </label>
-                <input
-                  name="newPassword"
-                  type="password"
-                  className="w-full px-4 py-3 border border-gray-600 placeholder-gray-400 text-white bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 sm:text-sm"
-                  placeholder="Enter new password"
-                  value={forgotPasswordData.newPassword}
-                  onChange={handleForgotPasswordChange}
-                />
+                <div className="relative">
+                  <input
+                    name="newPassword"
+                    type={showNewPassword ? "text" : "password"}
+                    className="w-full px-4 py-3 border border-gray-600 placeholder-gray-400 text-white bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 sm:text-sm"
+                    placeholder="Enter new password"
+                    value={forgotPasswordData.newPassword}
+                    onChange={handleForgotPasswordChange}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-20 text-gray-400 hover:text-white focus:z-30"
+                    tabIndex={-1}
+                    onClick={() => setShowNewPassword((v) => !v)}
+                    aria-label={showNewPassword ? "Hide password" : "Show password"}
+                  >
+                    {showNewPassword ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10a9.96 9.96 0 012.122-6.13M6.13 6.13A9.96 9.96 0 0112 3c5.523 0 10 4.477 10 10a9.96 9.96 0 01-1.17 4.61M17.87 17.87A9.96 9.96 0 0112 21c-5.523 0-10-4.477-10-10a9.96 9.96 0 012.122-6.13" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 18" /></svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Update Password Button */}
@@ -312,12 +359,7 @@ const Login = () => {
           </div>
         )}
 
-        {/* Demo info */}
-        <div className="mt-8 p-4 bg-gray-800 rounded-lg border border-gray-700">
-          <p className="text-xs text-gray-400 text-center">
-            <span className="font-medium text-gray-300">Demo Mode:</span> Use any email and password to login
-          </p>
-        </div>
+        {/* ...existing code... */}
       </div>
     </div>
   );
