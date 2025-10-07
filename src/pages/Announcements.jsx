@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '../api';
+import api, { deleteAnnouncement } from '../api';
 import { toast } from 'react-toastify';
 
 const Announcements = () => {
@@ -92,14 +92,17 @@ const Announcements = () => {
     if (!window.confirm('Are you sure you want to delete this announcement?')) {
       return;
     }
-
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setAnnouncements(announcements.filter(ann => ann._id !== announcementId));
+      const res = await deleteAnnouncement(announcementId);
+      if (res.data && res.data.success) {
+        setAnnouncements(announcements.filter(ann => ann._id !== announcementId));
+        toast.success('Announcement deleted successfully!');
+      } else {
+        toast.error(res.data?.data || 'Failed to delete announcement.');
+      }
     } catch (error) {
+      toast.error(error.response?.data?.data || 'Failed to delete announcement.');
       console.error('Failed to delete announcement:', error);
-      alert('Failed to delete announcement');
     }
   };
 

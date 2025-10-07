@@ -1,3 +1,12 @@
+// Delete announcement by ID
+export const deleteAnnouncement = async (id) => {
+  const token = localStorage.getItem('authToken');
+  return api.delete(`/announcement/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
 // Update announcement by ID
 export const updateAnnouncement = async (id, title, content) => {
   const token = localStorage.getItem('authToken');
