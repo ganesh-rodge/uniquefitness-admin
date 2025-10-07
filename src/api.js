@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 const BASE_URL = 'https://uniquefitness.onrender.com/api/v1';
@@ -7,6 +6,16 @@ const api = axios.create({
   baseURL: BASE_URL,
   withCredentials: true, // if you need cookies for auth
 });
+
+// Change admin password
+export const changeAdminPassword = async (oldPassword, newPassword) => {
+  const token = localStorage.getItem('authToken');
+  return api.patch('/admin/change-password', { oldPassword, newPassword }, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
 
 // Admin login (returns token and admin info)
 export const adminLogin = async (email, password) => {

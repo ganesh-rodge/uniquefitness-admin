@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { changeAdminPassword } from '../api';
 
 const ChangePassword = () => {
   const navigate = useNavigate();
@@ -36,23 +38,18 @@ const ChangePassword = () => {
 
     try {
       setIsLoading(true);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock success - in real app, this would call your API
-      console.log('Password change attempt:', {
-        oldPassword: passwordData.oldPassword,
-        newPassword: passwordData.newPassword
-      });
-      
-      // Show success and redirect
-      alert('Password changed successfully!');
-      navigate('/dashboard');
-      
+      const res = await changeAdminPassword(passwordData.oldPassword, passwordData.newPassword);
+      if (res.data && res.data.success) {
+        toast.success(res.data.message || 'Password changed successfully!');
+        navigate('/dashboard');
+      } else {
+        toast.error(res.data?.message || 'Failed to change password.');
+        setError(res.data?.message || 'Failed to change password.');
+      }
     } catch (error) {
       console.error('Failed to change password:', error);
-      setError('Failed to change password. Please check your old password.');
+  toast.error(error.response?.data?.message || 'Failed to change password. Please check your old password.');
+  setError(error.response?.data?.message || 'Failed to change password. Please check your old password.');
     } finally {
       setIsLoading(false);
     }
