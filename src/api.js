@@ -1,3 +1,22 @@
+// Fetch all members
+export const getMembers = async () => {
+  const token = localStorage.getItem('authToken');
+  return api.get('/admin/members', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+// Fetch single member by ID
+export const getMemberById = async (id) => {
+  const token = localStorage.getItem('authToken');
+  return api.get(`/admin/member/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
 import axios from 'axios';
 
 const BASE_URL = 'https://uniquefitness.onrender.com/api/v1';

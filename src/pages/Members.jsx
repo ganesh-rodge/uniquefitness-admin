@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MemberModal from '../components/MemberModal';
+import { getMembers } from '../api';
+import { toast } from 'react-toastify';
 
 const Members = () => {
   const navigate = useNavigate();
@@ -17,109 +19,14 @@ const Members = () => {
   const fetchMembers = async () => {
     try {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock data based on your provided structure
-      setMembers([
-        {
-          _id: "68cee487612f35ed1e58d2f0",
-          fullName: "Ganesh",
-          email: "ganeshrodge25@gmail.com",
-          phone: 9665552822,
-          isEmailVerified: true,
-          height: 7,
-          weight: 75,
-          address: "Ashoknagar",
-          gender: "Male",
-          dob: "2005-02-10T00:00:00.000Z",
-          aadhaarPhotoUrl: "http://res.cloudinary.com/dknvdmkou/image/upload/v1758389382/w4czowxjefowsyzwqulr.jpg",
-          livePhotoUrl: "http://res.cloudinary.com/dknvdmkou/image/upload/v1758639931/f4qkwujr37y6kwvqfyri.jpg",
-          membership: {
-            status: "inactive"
-          },
-          customWorkoutSchedule: {
-            monday: ["Back", "Shoulders"],
-            tuesday: ["Biceps"],
-            wednesday: ["Biceps", "Shoulders"],
-            thursday: ["Triceps"],
-            friday: ["Cardio"],
-            saturday: ["Calves"],
-            sunday: ["Forearms"]
-          },
-          role: "member",
-          weightHistory: [
-            {
-              date: "2025-09-21T11:39:26.197Z",
-              weight: 76,
-              _id: "68cfe3ee612f35ed1e58d455"
-            },
-            {
-              date: "2025-09-21T11:39:51.943Z",
-              weight: 74,
-              _id: "68cfe407612f35ed1e58d46b"
-            }
-          ],
-          createdAt: "2025-09-20T17:29:43.787Z",
-          updatedAt: "2025-09-25T05:12:35.402Z",
-          membershipStatus: "expired"
-        },
-        {
-          _id: "68cef823612f35ed1e58d3fe",
-          fullName: "Poonam",
-          email: "iamganeshro@gmail.com",
-          phone: 9665552822,
-          isEmailVerified: true,
-          height: 5.5,
-          weight: 60,
-          address: "Hinjawadi",
-          gender: "Female",
-          dob: "1999-04-24T00:00:00.000Z",
-          aadhaarPhotoUrl: "http://res.cloudinary.com/dknvdmkou/image/upload/v1758464524/gbuauahxlcclm9wzjfn1.jpg",
-          livePhotoUrl: "http://res.cloudinary.com/dknvdmkou/image/upload/v1758464525/pusfxhpfoxtcxopvnfiw.jpg",
-          membership: {
-            status: "inactive"
-          },
-          customWorkoutSchedule: {
-            monday: ["Chest", "Triceps"],
-            tuesday: ["Back", "Biceps"],
-            wednesday: ["Shoulders", "Abs"],
-            thursday: ["Chest", "Triceps"],
-            friday: ["Back", "Biceps", "Forearms"],
-            saturday: ["Legs", "Shoulders", "Abs"],
-            sunday: ["Rest"]
-          },
-          role: "member",
-          weightHistory: [],
-          createdAt: "2025-09-21T14:22:05.687Z",
-          updatedAt: "2025-09-22T03:44:20.689Z",
-          membershipStatus: "expired"
-        },
-        {
-          _id: "68d103da9faddc5467c07796",
-          fullName: "Amit",
-          email: "amitkanse62@gmail.com",
-          phone: 7030646438,
-          isEmailVerified: true,
-          height: 5.8,
-          weight: 70,
-          address: "Ashok Nagar",
-          gender: "Male",
-          dob: "1995-11-11T00:00:00.000Z",
-          aadhaarPhotoUrl: "http://res.cloudinary.com/dknvdmkou/image/upload/v1758528472/sxgzfyv0e1wdobzi7cic.jpg",
-          livePhotoUrl: "http://res.cloudinary.com/dknvdmkou/image/upload/v1758528473/vpnei2daoj5qwx0i4cfm.jpg",
-          membership: {
-            status: "inactive"
-          },
-          customWorkoutSchedule: {},
-          role: "member",
-          weightHistory: [],
-          createdAt: "2025-09-22T08:07:54.084Z",
-          updatedAt: "2025-09-22T08:07:54.916Z",
-          membershipStatus: "expired"
-        }
-      ]);
+      const res = await getMembers();
+      if (res.data && res.data.success) {
+        setMembers(res.data.data || []);
+      } else {
+        toast.error(res.data?.message || 'Failed to fetch members.');
+      }
     } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to fetch members.');
       console.error('Failed to fetch members:', error);
     } finally {
       setLoading(false);

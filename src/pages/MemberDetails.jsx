@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { getMemberById } from '../api';
+import { toast } from 'react-toastify';
 
 const MemberDetails = () => {
   const { id } = useParams();
@@ -17,98 +19,9 @@ const MemberDetails = () => {
   const fetchMemberDetails = async () => {
     try {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock member data based on your provided structure
-      const mockMembers = [
-        {
-          "_id": "68cee487612f35ed1e58d2f0",
-          "fullName": "Ganesh",
-          "email": "ganeshrodge25@gmail.com",
-          "phone": 9665552822,
-          "isEmailVerified": true,
-          "height": 7,
-          "weight": 75,
-          "address": "Ashoknagar",
-          "gender": "Male",
-          "dob": "2005-02-10T00:00:00.000Z",
-          "aadhaarPhotoUrl": "http://res.cloudinary.com/dknvdmkou/image/upload/v1758389382/w4czowxjefowsyzwqulr.jpg",
-          "livePhotoUrl": "http://res.cloudinary.com/dknvdmkou/image/upload/v1758639931/f4qkwujr37y6kwvqfyri.jpg",
-          "membership": {
-            "status": "inactive"
-          },
-          "customWorkoutSchedule": {
-            "monday": ["Back", "Shoulders"],
-            "tuesday": ["Biceps"],
-            "wednesday": ["Biceps", "Shoulders"],
-            "thursday": ["Triceps"],
-            "friday": ["Cardio"],
-            "saturday": ["Calves"],
-            "sunday": ["Forearms"]
-          },
-          "role": "member",
-          "weightHistory": [
-            {
-              "date": "2025-09-21T11:39:26.197Z",
-              "weight": 76,
-              "_id": "68cfe3ee612f35ed1e58d455"
-            },
-            {
-              "date": "2025-09-21T11:39:51.943Z",
-              "weight": 74,
-              "_id": "68cfe407612f35ed1e58d46b"
-            },
-            {
-              "date": "2025-09-21T11:40:16.643Z",
-              "weight": 75,
-              "_id": "68cfe420612f35ed1e58d48b"
-            },
-            {
-              "date": "2025-09-21T11:40:34.387Z",
-              "weight": 73,
-              "_id": "68cfe432612f35ed1e58d4b5"
-            },
-            {
-              "date": "2025-09-21T11:40:41.349Z",
-              "weight": 72,
-              "_id": "68cfe439612f35ed1e58d4c1"
-            }
-          ],
-          "createdAt": "2025-09-20T17:29:43.787Z",
-          "updatedAt": "2025-09-25T05:12:35.402Z",
-          "membershipStatus": "expired"
-        },
-        {
-          "_id": "68cef823612f35ed1e58d3fe",
-          "fullName": "Ganesh",
-          "email": "ganeshro555@gmail.com",
-          "phone": 9665552822,
-          "isEmailVerified": true,
-          "height": 6,
-          "weight": 70,
-          "address": "Ashoknagar",
-          "gender": "Male",
-          "dob": "2005-02-10T00:00:00.000Z",
-          "aadhaarPhotoUrl": "http://res.cloudinary.com/dknvdmkou/image/upload/v1758394402/frdv1nj9nlbc3xk5qo1y.jpg",
-          "livePhotoUrl": "http://res.cloudinary.com/dknvdmkou/image/upload/v1758394461/k72wa7cu9ljkrfz0dk5c.jpg",
-          "membership": {
-            "status": "inactive"
-          },
-          "customWorkoutSchedule": {
-            "monday": ["Back", "Cardio"],
-            "tuesday": ["Back", "Rest"]
-          },
-          "role": "member",
-          "weightHistory": [],
-          "createdAt": "2025-09-20T18:53:23.375Z",
-          "updatedAt": "2025-09-21T14:16:14.827Z",
-          "membershipStatus": "expired"
-        }
-      ];
-
-      const foundMember = mockMembers.find(m => m._id === id);
-      if (foundMember) {
+      const res = await getMemberById(id);
+      if (res.data && res.data.success) {
+        const foundMember = res.data.data;
         setMember(foundMember);
         setEditFormData({
           fullName: foundMember.fullName,
@@ -120,8 +33,11 @@ const MemberDetails = () => {
           gender: foundMember.gender,
           dob: foundMember.dob.split('T')[0]
         });
+      } else {
+        toast.error(res.data?.message || 'Failed to fetch member details.');
       }
     } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to fetch member details.');
       console.error('Failed to fetch member details:', error);
     } finally {
       setLoading(false);
@@ -289,14 +205,16 @@ const MemberDetails = () => {
               <div className="flex items-center mt-2 space-x-4">
                 <span className={`
                   inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border
-                  ${getStatusBadge(member.membershipStatus)}
+                  ${getStatusBadge(member.membership?.status)}
                 `}>
                   <div className={`
                     w-2 h-2 rounded-full mr-2
-                    ${member.membershipStatus === 'active' ? 'bg-green-400' : 
-                      member.membershipStatus === 'expired' ? 'bg-red-400' : 'bg-gray-400'}
+                    ${member.membership?.status === 'active' ? 'bg-green-400' : 
+                      member.membership?.status === 'expired' ? 'bg-red-400' : 'bg-gray-400'}
                   `}></div>
-                  {member.membershipStatus.charAt(0).toUpperCase() + member.membershipStatus.slice(1)}
+                  {member.membership?.status
+                    ? member.membership.status.charAt(0).toUpperCase() + member.membership.status.slice(1)
+                    : 'Unknown'}
                 </span>
                 <span className="text-gray-400 text-sm">
                   Member since {formatDate(member.createdAt)}
