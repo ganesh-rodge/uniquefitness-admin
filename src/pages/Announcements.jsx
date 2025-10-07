@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import api from '../api';
+import { toast } from 'react-toastify';
 
 const Announcements = () => {
   const [announcements, setAnnouncements] = useState([]);
@@ -17,34 +19,25 @@ const Announcements = () => {
   const fetchAnnouncements = async () => {
     try {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock data based on your example
-      setAnnouncements([
-        {
-          _id: "ann1",
-          title: "New Gym Update 33",
-          content: "We are introducing a new workout plan!",
-          createdAt: "2024-01-15T10:30:00Z",
-          updatedAt: "2024-01-15T10:30:00Z"
-        },
-        {
-          _id: "ann2",
-          title: "Holiday Hours",
-          content: "Please note that the gym will be closed on December 25th and will have reduced hours on New Year's Eve.",
-          createdAt: "2024-01-10T08:15:00Z",
-          updatedAt: "2024-01-10T08:15:00Z"
-        },
-        {
-          _id: "ann3",
-          title: "New Equipment Arrival",
-          content: "We've just received brand new cardio equipment! Come check out the latest treadmills and elliptical machines in the cardio section.",
-          createdAt: "2024-01-05T14:45:00Z",
-          updatedAt: "2024-01-05T14:45:00Z"
-        }
-      ]);
+      const res = await api.get('/announcement/');
+      if (res.data && res.data.success) {
+        // Map backend response to UI format
+        const announcementsList = Array.isArray(res.data.message)
+          ? res.data.message.map(a => ({
+              _id: a._id,
+              title: a.title,
+              content: a.content,
+              createdAt: a.createdAt,
+              updatedAt: a.updatedAt,
+              publishDate: a.publishDate
+            }))
+          : [];
+        setAnnouncements(announcementsList);
+      } else {
+        toast.error(res.data?.data || 'Failed to fetch announcements.');
+      }
     } catch (error) {
+      toast.error(error.response?.data?.data || 'Failed to fetch announcements.');
       console.error('Failed to fetch announcements:', error);
     } finally {
       setLoading(false);
@@ -124,7 +117,8 @@ const Announcements = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -280,12 +274,7 @@ const Announcements = () => {
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Created: {formatDate(announcement.createdAt)}
-                    {announcement.updatedAt !== announcement.createdAt && (
-                      <span className="ml-4">
-                        • Updated: {formatDate(announcement.updatedAt)}
-                      </span>
-                    )}
+                    {formatDate(announcement.publishDate)}
                   </div>
                 </div>
               </div>
