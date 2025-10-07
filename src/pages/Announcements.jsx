@@ -46,43 +46,36 @@ const Announcements = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!formData.title.trim() || !formData.content.trim()) {
-      alert('Please fill in all fields');
+      toast.error('Please fill in all fields');
       return;
     }
-
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const newAnnouncement = {
-        _id: Date.now().toString(),
+      const res = await api.post('/announcement/', {
         title: formData.title,
-        content: formData.content,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      if (editingAnnouncement) {
-        // Update existing announcement
-        setAnnouncements(announcements.map(ann => 
-          ann._id === editingAnnouncement._id 
-            ? { ...newAnnouncement, _id: editingAnnouncement._id, createdAt: editingAnnouncement.createdAt }
-            : ann
-        ));
+        content: formData.content
+      });
+      if (res.data && res.data.success) {
+        // The backend returns the created announcement in res.data.message
+        const created = res.data.message;
+        setAnnouncements([{
+          _id: created._id,
+          title: created.title,
+          content: created.content,
+          publishDate: created.publishDate,
+          createdAt: created.createdAt,
+          updatedAt: created.updatedAt
+        }, ...announcements]);
+        toast.success('Announcement created successfully!');
+        setFormData({ title: '', content: '' });
+        setShowForm(false);
+        setEditingAnnouncement(null);
       } else {
-        // Add new announcement
-        setAnnouncements([newAnnouncement, ...announcements]);
+        toast.error(res.data?.data || 'Failed to create announcement.');
       }
-
-      // Reset form
-      setFormData({ title: '', content: '' });
-      setShowForm(false);
-      setEditingAnnouncement(null);
     } catch (error) {
-      console.error('Failed to save announcement:', error);
-      alert('Failed to save announcement');
+      toast.error(error.response?.data?.data || 'Failed to create announcement.');
+      console.error('Failed to create announcement:', error);
     }
   };
 

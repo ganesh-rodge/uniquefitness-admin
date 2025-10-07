@@ -1,3 +1,12 @@
+import axios from 'axios';
+
+const BASE_URL = 'https://uniquefitness.onrender.com/api/v1';
+
+const api = axios.create({
+  baseURL: BASE_URL,
+  withCredentials: true, // if you need cookies for auth
+});
+
 // Fetch all members
 export const getMembers = async () => {
   const token = localStorage.getItem('authToken');
@@ -17,14 +26,6 @@ export const getMemberById = async (id) => {
     },
   });
 };
-import axios from 'axios';
-
-const BASE_URL = 'https://uniquefitness.onrender.com/api/v1';
-
-const api = axios.create({
-  baseURL: BASE_URL,
-  withCredentials: true, // if you need cookies for auth
-});
 
 // Change admin password
 export const changeAdminPassword = async (oldPassword, newPassword) => {
