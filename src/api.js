@@ -1,3 +1,12 @@
+// Update announcement by ID
+export const updateAnnouncement = async (id, title, content) => {
+  const token = localStorage.getItem('authToken');
+  return api.patch(`/announcement/${id}`, { title, content }, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
 import axios from 'axios';
 
 const BASE_URL = 'https://uniquefitness.onrender.com/api/v1';
