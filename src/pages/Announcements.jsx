@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import api, { deleteAnnouncement } from '../api';
 import { toast } from 'react-toastify';
 
@@ -11,10 +12,18 @@ const Announcements = () => {
     title: '',
     content: ''
   });
+  const location = useLocation();
 
   useEffect(() => {
     fetchAnnouncements();
   }, []);
+
+  // Open the form when navigated from dashboard quick action
+  useEffect(() => {
+    if (location?.state?.openForm) {
+      setShowForm(true);
+    }
+  }, [location?.state]);
 
   const fetchAnnouncements = async () => {
     try {
