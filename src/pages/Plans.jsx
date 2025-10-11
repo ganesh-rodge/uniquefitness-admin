@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { getMembershipPlans, createMembershipPlan, deleteMembershipPlan, updateMembershipPlan } from '../api';
+import { toast } from 'react-toastify';
 
 const Plans = () => {
   const [plans, setPlans] = useState([]);
@@ -19,54 +21,16 @@ const Plans = () => {
   const fetchPlans = async () => {
     try {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock data
-      setPlans([
-        {
-          _id: "plan1",
-          name: "Premium Plan",
-          price: 1300,
-          duration: 3,
-          status: "active",
-          createdAt: "2024-01-15T10:30:00Z",
-          updatedAt: "2024-01-15T10:30:00Z",
-          membersCount: 15
-        },
-        {
-          _id: "plan2",
-          name: "Basic Plan",
-          price: 800,
-          duration: 1,
-          status: "active",
-          createdAt: "2024-01-10T08:15:00Z",
-          updatedAt: "2024-01-10T08:15:00Z",
-          membersCount: 25
-        },
-        {
-          _id: "plan3",
-          name: "Gold Plan",
-          price: 2500,
-          duration: 6,
-          status: "active",
-          createdAt: "2024-01-05T14:45:00Z",
-          updatedAt: "2024-01-05T14:45:00Z",
-          membersCount: 8
-        },
-        {
-          _id: "plan4",
-          name: "Student Plan",
-          price: 600,
-          duration: 1,
-          status: "inactive",
-          createdAt: "2024-01-01T12:00:00Z",
-          updatedAt: "2024-01-01T12:00:00Z",
-          membersCount: 12
-        }
-      ]);
+      const res = await getMembershipPlans();
+      if (res.data && res.data.success && Array.isArray(res.data.message)) {
+        setPlans(res.data.message);
+      } else {
+        setPlans([]);
+        toast.error(res.data?.data || 'Failed to fetch plans');
+      }
     } catch (error) {
-      console.error('Failed to fetch plans:', error);
+      setPlans([]);
+      toast.error(error.response?.data?.message || 'Failed to fetch plans');
     } finally {
       setLoading(false);
     }
@@ -91,39 +55,39 @@ const Plans = () => {
     }
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const newPlan = {
-        _id: Date.now().toString(),
+      const payload = {
         name: formData.name,
         price: parseInt(formData.price),
         duration: parseInt(formData.duration),
-        status: formData.status,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        membersCount: 0
+        status: formData.status
       };
-
       if (editingPlan) {
-        // Update existing plan
-        setPlans(plans.map(plan => 
-          plan._id === editingPlan._id 
-            ? { ...newPlan, _id: editingPlan._id, createdAt: editingPlan.createdAt, membersCount: editingPlan.membersCount }
-            : plan
-        ));
+        const res = await updateMembershipPlan(editingPlan._id, payload);
+        if (res.data && res.data.success && res.data.message) {
+          // Use backend response to update local state
+          setPlans(plans.map(plan => plan._id === editingPlan._id ? res.data.message : plan));
+          toast.success('Plan updated successfully');
+          setFormData({ name: '', price: '', duration: '', status: 'active' });
+          setShowForm(false);
+          setEditingPlan(null);
+        } else {
+          toast.error(res.data?.data || 'Failed to update plan');
+        }
       } else {
-        // Add new plan
-        setPlans([newPlan, ...plans]);
+        const res = await createMembershipPlan(payload);
+        if (res.data && res.data.success && res.data.message) {
+          setPlans([res.data.message, ...plans]);
+          toast.success('Plan created successfully');
+          setFormData({ name: '', price: '', duration: '', status: 'active' });
+          setShowForm(false);
+          setEditingPlan(null);
+        } else {
+          toast.error(res.data?.data || 'Failed to create plan');
+        }
       }
-
-      // Reset form
-      setFormData({ name: '', price: '', duration: '', status: 'active' });
-      setShowForm(false);
-      setEditingPlan(null);
     } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to save plan');
       console.error('Failed to save plan:', error);
-      alert('Failed to save plan');
     }
   };
 
@@ -142,14 +106,17 @@ const Plans = () => {
     if (!window.confirm('Are you sure you want to delete this plan?')) {
       return;
     }
-
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setPlans(plans.filter(plan => plan._id !== planId));
+      const res = await deleteMembershipPlan(planId);
+      if (res.data && res.data.success) {
+        setPlans(plans.filter(plan => plan._id !== planId));
+        toast.success('Plan deleted successfully');
+      } else {
+        toast.error(res.data?.message || 'Failed to delete plan');
+      }
     } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete plan');
       console.error('Failed to delete plan:', error);
-      alert('Failed to delete plan');
     }
   };
 
@@ -322,18 +289,18 @@ const Plans = () => {
             >
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-xl font-semibold text-white mb-2">{plan.name}</h3>
+                  <h3 className="text-xl font-semibold text-white mb-2">{plan.name || 'Unnamed Plan'}</h3>
                   <div className="flex items-center space-x-2">
-                    <span className={`
-                      inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border
-                      ${getStatusBadge(plan.status)}
-                    `}>
-                      <div className={`
-                        w-2 h-2 rounded-full mr-2
-                        ${plan.status === 'active' ? 'bg-green-400' : 'bg-red-400'}
-                      `}></div>
-                      {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
-                    </span>
+                      <span className={`
+                        inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border
+                        ${getStatusBadge(plan.status || 'inactive')}
+                      `}>
+                        <div className={`
+                          w-2 h-2 rounded-full mr-2
+                          ${(plan.status || 'inactive') === 'active' ? 'bg-green-400' : 'bg-red-400'}
+                        `}></div>
+                        {(plan.status ? (plan.status.charAt(0).toUpperCase() + plan.status.slice(1)) : 'Inactive')}
+                      </span>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -361,13 +328,13 @@ const Plans = () => {
               {/* Price */}
               <div className="mb-4">
                 <div className="text-3xl font-bold text-primary mb-1">
-                  ₹{plan.price}
+                  ₹{typeof plan.price === 'number' && !isNaN(plan.price) ? plan.price : 0}
                   <span className="text-lg text-gray-400 font-normal">
-                    /{plan.duration} month{plan.duration > 1 ? 's' : ''}
+                    /{typeof plan.duration === 'number' && !isNaN(plan.duration) ? plan.duration : 1} month{plan.duration > 1 ? 's' : ''}
                   </span>
                 </div>
                 <p className="text-gray-400 text-sm">
-                  ₹{Math.round(plan.price / plan.duration)} per month
+                  ₹{(typeof plan.price === 'number' && typeof plan.duration === 'number' && plan.duration > 0) ? Math.round(plan.price / plan.duration) : 0} per month
                 </p>
               </div>
 
@@ -384,10 +351,10 @@ const Plans = () => {
 
               {/* Date */}
               <div className="text-xs text-gray-400">
-                Created: {formatDate(plan.createdAt)}
-                {plan.updatedAt !== plan.createdAt && (
+                Created: {plan.createdAt ? formatDate(plan.createdAt) : 'N/A'}
+                {(plan.updatedAt && plan.updatedAt !== plan.createdAt) && (
                   <span className="block mt-1">
-                    Updated: {formatDate(plan.updatedAt)}
+                    Updated: {plan.updatedAt ? formatDate(plan.updatedAt) : 'N/A'}
                   </span>
                 )}
               </div>

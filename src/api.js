@@ -1,3 +1,39 @@
+// Update membership plan by ID
+export const updateMembershipPlan = async (id, planData) => {
+  const token = localStorage.getItem('authToken');
+  return api.patch(`/membership/${id}`, planData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+// Delete membership plan by ID
+export const deleteMembershipPlan = async (id) => {
+  const token = localStorage.getItem('authToken');
+  return api.delete(`/membership/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+// Create membership plan
+export const createMembershipPlan = async (planData) => {
+  const token = localStorage.getItem('authToken');
+  return api.post('/membership', planData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+// Get membership plans
+export const getMembershipPlans = async () => {
+  const token = localStorage.getItem('authToken');
+  return api.get('/membership', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
 // Delete announcement by ID
 export const deleteAnnouncement = async (id) => {
   const token = localStorage.getItem('authToken');
@@ -61,23 +97,49 @@ export const adminLogin = async (email, password) => {
 };
 
 // Example: Add video for muscle group
-export const addMuscleVideo = async (muscle, link) => {
-  return api.post('/workout/video', { muscle, link });
+export const addWorkoutVideos = async (muscle, videos) => {
+  const token = localStorage.getItem('authToken');
+  return api.post('/workout/video', { muscle, videos }, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 };
 
-// Example: Get videos for muscle group
+// Get videos for muscle group
 export const getMuscleVideos = async (muscle) => {
-  return api.get(`/workout/video/${muscle}`);
+  const token = localStorage.getItem('authToken');
+  return api.get(`/workout/video?muscle=${encodeURIComponent(muscle)}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 };
 
-// Example: Remove video for muscle group
-export const removeMuscleVideo = async (muscle, link) => {
-  return api.delete('/workout/video', { data: { muscle, link } });
+// Remove video for muscle group
+export const removeMuscleVideo = async (muscle, video) => {
+  const token = localStorage.getItem('authToken');
+  return api.delete('/workout/video', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    data: { muscle, video },
+  });
 };
 
 // Example: Update video for muscle group
 export const updateMuscleVideo = async (muscle, oldLink, newLink) => {
   return api.put('/workout/video', { muscle, oldLink, newLink });
+};
+
+// Dashboard stats
+export const getDashboardStats = async () => {
+  const token = localStorage.getItem('authToken');
+  return api.get('/admin/dashboard-stats', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 };
 
 export default api;

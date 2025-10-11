@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { addWorkoutVideos, getMuscleVideos, removeMuscleVideo } from '../api';
+import { toast } from 'react-toastify';
 
 const muscles = [
   'chest', 'tricepts', 'shoulder', 'back', 'biceps', 'legs', 'abs', 'forearms', 'cardio', 'glutes', 'calves'
@@ -18,31 +20,83 @@ const Workout = () => {
     return (match && match[1].length === 11) ? match[1] : null;
   };
 
-  const handleAddClick = (muscle) => {
+  const handleAddClick = async (muscle) => {
     setSelectedMuscle(muscle);
     setInputLink('');
+    // Fetch previous links for this muscle from backend
+    try {
+      const res = await getMuscleVideos(muscle);
+      if (res.data && res.data.success && Array.isArray(res.data.data)) {
+        setMuscleLinks(prev => ({ ...prev, [muscle]: res.data.data }));
+      } else {
+        setMuscleLinks(prev => ({ ...prev, [muscle]: [] }));
+      }
+    } catch (error) {
+      setMuscleLinks(prev => ({ ...prev, [muscle]: [] }));
+    }
     setShowModal(true);
   };
 
-  const handleSaveLink = () => {
+  const handleSaveLink = async () => {
     if (!inputLink) return;
-    setMuscleLinks(prev => {
-      const prevLinks = prev[selectedMuscle] || [];
-      return { ...prev, [selectedMuscle]: [...prevLinks, inputLink] };
-    });
-    setInputLink('');
+    try {
+      const res = await addWorkoutVideos(selectedMuscle, [inputLink]);
+      if (res.data && res.data.success) {
+        // Update local state
+        setMuscleLinks(prev => {
+          const prevLinks = prev[selectedMuscle] || [];
+          return { ...prev, [selectedMuscle]: [...prevLinks, inputLink] };
+        });
+        toast.success('Video link added successfully');
+        setInputLink('');
+      } else {
+        toast.error(res.data?.message || 'Failed to add video link');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to add video link');
+      console.error('Failed to add workout video:', error);
+    }
   };
 
-  const handleRemoveLink = (muscle, idx) => {
-    setMuscleLinks(prev => {
-      const links = prev[muscle] ? [...prev[muscle]] : [];
-      links.splice(idx, 1);
-      return { ...prev, [muscle]: links };
-    });
+  const handleRemoveLink = async (muscle, idx) => {
+    const linkToRemove = muscleLinks[muscle][idx];
+    try {
+      const res = await removeMuscleVideo(muscle, linkToRemove);
+      if (res.data && res.data.success) {
+        setMuscleLinks(prev => {
+          const links = prev[muscle] ? [...prev[muscle]] : [];
+          links.splice(idx, 1);
+          return { ...prev, [muscle]: links };
+        });
+        toast.success('Video link removed successfully');
+      } else {
+        toast.error(res.data?.message || 'Failed to remove video link');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to remove video link');
+      console.error('Failed to remove workout video:', error);
+    }
   };
 
-  const handlePlayClick = (muscle) => {
-    setShowVideo((prev) => ({ ...prev, [muscle]: !prev[muscle] }));
+  const handlePlayClick = async (muscle) => {
+    // If already showing, just toggle off
+    if (showVideo[muscle]) {
+      setShowVideo((prev) => ({ ...prev, [muscle]: false }));
+      return;
+    }
+    try {
+      const res = await getMuscleVideos(muscle);
+      if (res.data && res.data.success && Array.isArray(res.data.data)) {
+        setMuscleLinks(prev => ({ ...prev, [muscle]: res.data.data }));
+        setShowVideo((prev) => ({ ...prev, [muscle]: true }));
+      } else {
+        setMuscleLinks(prev => ({ ...prev, [muscle]: [] }));
+        setShowVideo((prev) => ({ ...prev, [muscle]: true }));
+      }
+    } catch (error) {
+      setMuscleLinks(prev => ({ ...prev, [muscle]: [] }));
+      setShowVideo((prev) => ({ ...prev, [muscle]: true }));
+    }
   };
 
   return (

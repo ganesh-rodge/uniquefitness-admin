@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getDashboardStats } from '../api';
+import { toast } from 'react-toastify';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -13,17 +15,14 @@ const Dashboard = () => {
   const fetchDashboardStats = async () => {
     try {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock data based on your example
-      setStats({
-        totalMembers: 6,
-        activeMembers: 0,
-        expiringSoon: 0,
-        expiredMembers: 0
-      });
+      const res = await getDashboardStats();
+      if (res.data && res.data.success) {
+        setStats(res.data.data);
+      } else {
+        toast.error(res.data?.message || 'Failed to fetch dashboard stats.');
+      }
     } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to fetch dashboard stats.');
       console.error('Failed to fetch dashboard stats:', error);
     } finally {
       setLoading(false);
