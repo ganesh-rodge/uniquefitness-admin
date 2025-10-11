@@ -143,3 +143,24 @@ export const getDashboardStats = async () => {
 };
 
 export default api;
+
+// Delete diet plan by ID
+export const deleteDietPlan = async (id) => {
+  const token = localStorage.getItem('authToken');
+  return api.delete(`/admin/dietplan/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+// Admin: Create diet plan (supports multiple payload shapes)
+export const createDietPlanAdmin = async (payload) => {
+  const token = localStorage.getItem('authToken');
+  return api.post('/admin/dietplan', payload, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+};

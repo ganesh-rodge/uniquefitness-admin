@@ -1,11 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
-
-const defaultDietPlans = [
-  // ...sample data from your request...
-];
-
+import axios from 'axios';
+import { deleteDietPlan } from '../api';
 
 const DietPlans = () => {
   const [dietPlans, setDietPlans] = useState([]);
@@ -13,20 +9,45 @@ const DietPlans = () => {
   const [purposeFilter, setPurposeFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const navigate = useNavigate();
+  const BASE_URL = 'https://uniquefitness.onrender.com/api/v1/dietplan';
 
-  useEffect(() => {
-    const stored = localStorage.getItem('dietPlans');
-    if (stored) {
-      setDietPlans(JSON.parse(stored));
-    } else {
-      setDietPlans(defaultDietPlans);
-      localStorage.setItem('dietPlans', JSON.stringify(defaultDietPlans));
+  const fetchDietPlans = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await axios.get(BASE_URL, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data && res.data.success && Array.isArray(res.data.message)) {
+        setDietPlans(res.data.message);
+      } else {
+        setDietPlans([]);
+      }
+    } catch (err) {
+      setDietPlans([]);
     }
+  };
+  useEffect(() => {
+    fetchDietPlans();
   }, []);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this diet plan?')) return;
+    try {
+      const res = await deleteDietPlan(id);
+      if (res.data && res.data.success) {
+        fetchDietPlans();
+      } else {
+        alert(res.data?.data || 'Failed to delete');
+      }
+    } catch (err) {
+      alert('Failed to delete');
+    }
+  };
 
   // Filter plans
   const filteredPlans = dietPlans.filter(plan =>
-    (purposeFilter === 'All' || plan.purpose === purposeFilter)
+    (purposeFilter === 'All' || plan.purpose === purposeFilter) &&
+    (categoryFilter === 'All' || plan.category === categoryFilter)
   );
 
   return (
@@ -60,22 +81,26 @@ const DietPlans = () => {
         + Create New
       </button>
       <div className="space-y-4">
-        {filteredPlans.map((plan, idx) => (
-          <div key={idx}>
-            {plan.categories
-              .filter(cat => categoryFilter === 'All' || cat.category === categoryFilter)
-              .map((cat, cidx) => (
-                <button
-                  key={cidx}
-                  className="w-full text-left bg-gray-800 text-lg font-semibold px-6 py-4 rounded-lg flex justify-between items-center hover:bg-gray-700 transition-all duration-200"
-                  onClick={() => setSelectedPlan({ ...plan, ...cat })}
-                >
-                  <span>{plan.purpose}: {cat.category}</span>
-                  <span className="text-amber-300 text-2xl">&gt;</span>
-                </button>
-              ))}
-          </div>
-        ))}
+        {filteredPlans.map((plan) => {
+          const firstItem = Array.isArray(plan.plan) && plan.plan.length > 0 ? plan.plan[0] : null;
+          return (
+            <div key={plan._id} className="relative">
+              <button
+                className="w-full text-left bg-gray-800 text-lg font-semibold px-6 py-4 rounded-lg flex justify-between items-center hover:bg-gray-700 transition-all duration-200"
+                onClick={() => setSelectedPlan(plan)}
+                disabled={!firstItem}
+              >
+                <span>{firstItem ? `${firstItem.time}: ${firstItem.items}` : 'No plan details'}</span>
+                <span className="text-amber-300 text-2xl">&gt;</span>
+              </button>
+              <button
+                className="absolute top-2 right-2 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                title="Delete"
+                onClick={() => handleDelete(plan._id)}
+              >Delete</button>
+            </div>
+          );
+        })}
       </div>
       {/* Modal Popup */}
       {selectedPlan && (
@@ -88,8 +113,7 @@ const DietPlans = () => {
               &times;
             </button>
             <h2 className="text-2xl font-bold mb-2">{selectedPlan.purpose}</h2>
-            <div className="mb-2 text-gray-300">Category: {selectedPlan.category}</div>
-            <div className="mb-4 text-gray-300">Timing:</div>
+            <div className="mb-2 text-gray-300">Category: {selectedPlan.category} Timing:</div>
             <div>
               <span className="font-bold text-amber-300">Plan:</span>
               <ul className="list-disc ml-6 mt-2">
