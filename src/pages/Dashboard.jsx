@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import AddMemberModal from '../components/AddMemberModal';
 import { useNavigate } from 'react-router-dom';
 import { getDashboardStats } from '../api';
 import { toast } from 'react-toastify';
@@ -7,6 +8,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isAddOpen, setIsAddOpen] = useState(false);
 
   useEffect(() => {
     fetchDashboardStats();
@@ -154,7 +156,9 @@ const Dashboard = () => {
             Quick Actions
           </h2>
           <div className="space-y-3">
-            <button className="w-full text-left p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors duration-200 flex items-center text-gray-300 hover:text-white">
+            <button
+              onClick={() => setIsAddOpen(true)}
+              className="w-full text-left p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors duration-200 flex items-center text-gray-300 hover:text-white">
               <svg className="w-5 h-5 mr-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
@@ -215,6 +219,12 @@ const Dashboard = () => {
           Refresh Data
         </button>
       </div>
+    {/* Add Member Modal */}
+    <AddMemberModal
+      isOpen={isAddOpen}
+      onClose={() => setIsAddOpen(false)}
+      onSuccess={fetchDashboardStats}
+    />
     </div>
   );
 };

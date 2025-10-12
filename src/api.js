@@ -164,3 +164,15 @@ export const createDietPlanAdmin = async (payload) => {
     },
   });
 };
+
+// Admin: Create user (multipart form)
+export const createAdminUser = async (formData) => {
+  const token = localStorage.getItem('authToken');
+  // formData should be an instance of FormData with fields: fullName, email, password, phone, height, weight, gender, dob, address, aadhaarPhoto (file), livePhoto (file)
+  return api.post('/admin/create-user', formData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
