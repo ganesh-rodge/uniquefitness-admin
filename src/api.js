@@ -19,7 +19,7 @@ export const deleteMembershipPlan = async (id) => {
 // Create membership plan
 export const createMembershipPlan = async (planData) => {
   const token = localStorage.getItem('authToken');
-  return api.post('/membership', planData, {
+  return api.post('/membership/', planData, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -81,6 +81,16 @@ export const getMemberById = async (id) => {
   });
 };
 
+// Delete member by ID
+export const deleteMemberById = async (id) => {
+  const token = localStorage.getItem('authToken');
+  return api.delete(`/admin/members/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
 // Change admin password
 export const changeAdminPassword = async (oldPassword, newPassword) => {
   const token = localStorage.getItem('authToken');
@@ -94,6 +104,15 @@ export const changeAdminPassword = async (oldPassword, newPassword) => {
 // Admin login (returns token and admin info)
 export const adminLogin = async (email, password) => {
   return api.post('/admin/login', { email, password });
+};
+
+// Reset admin password using secret code verification
+export const resetAdminPassword = async (email, newPassword, secretCode) => {
+  return api.post('/admin/reset-password', {
+    email,
+    newPassword,
+    secretCode,
+  });
 };
 
 // Example: Add video for muscle group
@@ -173,6 +192,16 @@ export const createAdminUser = async (formData) => {
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+// Admin: Recent activities
+export const getRecentActivities = async (page = 1, limit = 3) => {
+  const token = localStorage.getItem('authToken');
+  return api.get(`/admin/activities?page=${page}&limit=${limit}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
     },
   });
 };

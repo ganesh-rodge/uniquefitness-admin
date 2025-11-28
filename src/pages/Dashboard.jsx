@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
-import AddMemberModal from '../components/AddMemberModal';
 import { useNavigate } from 'react-router-dom';
-import { getDashboardStats } from '../api';
+import { getDashboardStats, getRecentActivities } from '../api';
 import { toast } from 'react-toastify';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [activities, setActivities] = useState([]);
 
   useEffect(() => {
     fetchDashboardStats();
+    fetchActivities();
   }, []);
 
   const fetchDashboardStats = async () => {
@@ -33,6 +33,18 @@ const Dashboard = () => {
 
   const handleChangePassword = () => {
     navigate('/change-password');
+  };
+
+  const fetchActivities = async () => {
+    try {
+      const res = await getRecentActivities(1, 2);
+      if (res.data && res.data.success) {
+        const items = res.data.data?.items || [];
+        setActivities(items.slice(0, 2));
+      }
+    } catch (error) {
+      console.error('Failed to fetch activities:', error);
+    }
   };
 
   const StatCard = ({ title, value, icon, color, trend = null, description }) => (
@@ -157,8 +169,8 @@ const Dashboard = () => {
           </h2>
           <div className="space-y-3">
             <button
-              onClick={() => setIsAddOpen(true)}
-              className="w-full text-left p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors duration-200 flex items-center text-gray-300 hover:text-white">
+              onClick={() => navigate('/members/create')}
+              className="w-full text-left p-4 sm:p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors duration-200 flex items-center text-gray-300 hover:text-white">
               <svg className="w-5 h-5 mr-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
@@ -166,13 +178,13 @@ const Dashboard = () => {
             </button>
             <button
               onClick={() => navigate('/announcements', { state: { openForm: true } })}
-              className="w-full text-left p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors duration-200 flex items-center text-gray-300 hover:text-white">
+              className="w-full text-left p-4 sm:p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors duration-200 flex items-center text-gray-300 hover:text-white">
               <svg className="w-5 h-5 mr-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
               </svg>
               Create Announcement
             </button>
-            <button className="w-full text-left p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors duration-200 flex items-center text-gray-300 hover:text-white">
+            <button className="w-full text-left p-4 sm:p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors duration-200 flex items-center text-gray-300 hover:text-white">
               <svg className="w-5 h-5 mr-3 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
@@ -180,7 +192,7 @@ const Dashboard = () => {
             </button>
             <button 
               onClick={handleChangePassword}
-              className="w-full text-left p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors duration-200 flex items-center text-gray-300 hover:text-white"
+              className="w-full text-left p-4 sm:p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors duration-200 flex items-center text-gray-300 hover:text-white"
             >
               <svg className="w-5 h-5 mr-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1721 9z" />
@@ -199,10 +211,26 @@ const Dashboard = () => {
             Recent Activity
           </h2>
           <div className="space-y-3">
-            <div className="p-3 bg-gray-800 rounded-lg">
-              <p className="text-sm text-gray-300">No recent activity</p>
-              <p className="text-xs text-gray-500 mt-1">Member activities will appear here</p>
-            </div>
+            {activities.length === 0 ? (
+              <div className="p-3 bg-gray-800 rounded-lg">
+                <p className="text-sm text-gray-300">No recent activity</p>
+                <p className="text-xs text-gray-500 mt-1">Member activities will appear here</p>
+              </div>
+            ) : (
+              activities.map((act, idx) => (
+                <div key={idx} className="p-3 bg-gray-800 rounded-lg flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-white">{act.message}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {new Date(act.at).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                    {act.actor?.name && (
+                      <p className="text-xs text-gray-500 mt-1">By: {act.actor.name}{act.actor?.email ? ` (${act.actor.email})` : ''}</p>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -220,11 +248,6 @@ const Dashboard = () => {
         </button>
       </div>
     {/* Add Member Modal */}
-    <AddMemberModal
-      isOpen={isAddOpen}
-      onClose={() => setIsAddOpen(false)}
-      onSuccess={fetchDashboardStats}
-    />
     </div>
   );
 };

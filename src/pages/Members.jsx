@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MemberModal from '../components/MemberModal';
-import AddMemberModal from '../components/AddMemberModal';
 import { getMembers } from '../api';
 import { toast } from 'react-toastify';
 
@@ -12,7 +11,6 @@ const Members = () => {
   const [selectedMember, setSelectedMember] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [isAddOpen, setIsAddOpen] = useState(false);
 
   useEffect(() => {
     fetchMembers();
@@ -80,7 +78,7 @@ const Members = () => {
           <p className="text-gray-400 mt-2">Manage gym members and their details</p>
         </div>
         <div className="mt-4 sm:mt-0">
-          <button onClick={() => setIsAddOpen(true)} className="bg-primary cursor-pointer bg-yellow-300 text-gray-900 font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center">
+          <button onClick={() => navigate('/members/create')} className="bg-primary cursor-pointer bg-yellow-300 text-gray-900 font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center">
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
@@ -90,7 +88,7 @@ const Members = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6">
         {/* Search */}
         <div className="flex-1">
           <div className="relative">
@@ -104,7 +102,7 @@ const Members = () => {
               placeholder="Search members..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-600 rounded-lg bg-gray-900 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              className="block w-full pl-10 pr-3 py-3 sm:py-2 border border-gray-600 rounded-lg bg-gray-900 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
             />
           </div>
         </div>
@@ -114,7 +112,7 @@ const Members = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="block w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            className="block w-full px-3 py-3 sm:py-2 border border-gray-600 rounded-lg bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
           >
             <option value="all">All Status</option>
             <option value="active">Active</option>
@@ -145,7 +143,7 @@ const Members = () => {
                 {/* Profile Photo */}
                 <div className="flex-shrink-0">
                   <img
-                    className="h-16 w-16 rounded-full object-cover border-2 border-gray-700"
+                    className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-gray-700"
                     src={member.livePhotoUrl}
                     alt={member.fullName}
                   />
@@ -160,7 +158,7 @@ const Members = () => {
                       <p className="text-gray-400 text-sm">Phone: {member.phone}</p>
                     </div>
                     
-                    <div className="mt-3 sm:mt-0 flex items-center gap-3">
+                    <div className="mt-3 sm:mt-0 flex items-center gap-3 flex-wrap">
                       {/* Status Badge */}
                       <span className={`
                         inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
@@ -199,12 +197,6 @@ const Members = () => {
         />
       )}
 
-      {/* Add Member Modal */}
-      <AddMemberModal
-        isOpen={isAddOpen}
-        onClose={() => setIsAddOpen(false)}
-        onSuccess={fetchMembers}
-      />
     </div>
   );
 };

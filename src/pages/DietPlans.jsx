@@ -3,11 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { deleteDietPlan } from '../api';
 
+const PURPOSE_OPTIONS = ['gain', 'loose', 'maintain'];
+const CATEGORY_OPTIONS = ['eggetarian', 'vegetarian', 'non-vegetarian'];
+
+const formatLabel = (value) => value.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+
 const DietPlans = () => {
   const [dietPlans, setDietPlans] = useState([]);
   const [selectedPlan, setSelectedPlan] = useState(null);
-  const [purposeFilter, setPurposeFilter] = useState('All');
-  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [purposeFilter, setPurposeFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const navigate = useNavigate();
   const BASE_URL = 'https://uniquefitness.onrender.com/api/v1/dietplan';
 
@@ -46,31 +51,30 @@ const DietPlans = () => {
 
   // Filter plans
   const filteredPlans = dietPlans.filter(plan =>
-    (purposeFilter === 'All' || plan.purpose === purposeFilter) &&
-    (categoryFilter === 'All' || plan.category === categoryFilter)
+    (purposeFilter === 'all' || plan.purpose === purposeFilter) &&
+    (categoryFilter === 'all' || plan.category === categoryFilter)
   );
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <h1 className="text-3xl font-bold mb-6">Diet Plans</h1>
-      <div className="flex space-x-4 mb-6">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6">
+        <div className="flex items-center gap-2">
           <label className="mr-2">Purpose:</label>
-          <select value={purposeFilter} onChange={e => setPurposeFilter(e.target.value)} className="bg-gray-800 text-white px-4 py-2 rounded">
-            <option>All</option>
-            <option>Weight Loss</option>
-            <option>Weight Gain</option>
-            <option>Maintain</option>
-            <option>General Health</option>
+          <select value={purposeFilter} onChange={e => setPurposeFilter(e.target.value)} className="bg-gray-800 text-white px-4 py-3 sm:py-2 rounded border border-gray-600">
+            <option value="all">All</option>
+            {PURPOSE_OPTIONS.map(option => (
+              <option key={option} value={option}>{formatLabel(option)}</option>
+            ))}
           </select>
         </div>
-        <div>
+        <div className="flex items-center gap-2">
           <label className="mr-2">Category:</label>
-          <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="bg-gray-800 text-white px-4 py-2 rounded">
-            <option>All</option>
-            <option>Vegetarian</option>
-            <option>Eggatarian</option>
-            <option>Non-Vegetarian</option>
+          <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="bg-gray-800 text-white px-4 py-3 sm:py-2 rounded border border-gray-600">
+            <option value="all">All</option>
+            {CATEGORY_OPTIONS.map(option => (
+              <option key={option} value={option}>{formatLabel(option)}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -112,8 +116,8 @@ const DietPlans = () => {
             >
               &times;
             </button>
-            <h2 className="text-2xl font-bold mb-2">{selectedPlan.purpose}</h2>
-            <div className="mb-2 text-gray-300">Category: {selectedPlan.category} Timing:</div>
+            <h2 className="text-2xl font-bold mb-2">{formatLabel(selectedPlan.purpose)}</h2>
+            <div className="mb-2 text-gray-300">Category: {formatLabel(selectedPlan.category)} Timing:</div>
             <div>
               <span className="font-bold text-amber-300">Plan:</span>
               <ul className="list-disc ml-6 mt-2">

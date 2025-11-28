@@ -1,19 +1,20 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { adminLogin } from '../api';
+import { adminLogin, resetAdminPassword } from '../api';
+
+const initialForgotPasswordState = {
+  email: '',
+  newPassword: '',
+  secretCode: ''
+};
 
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
-  const [forgotPasswordData, setForgotPasswordData] = useState({
-    email: '',
-    otp: '',
-    newPassword: ''
-  });
+  const [forgotPasswordData, setForgotPasswordData] = useState(initialForgotPasswordState);
   const [isLoading, setIsLoading] = useState(false);
-  const [otpLoading, setOtpLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -62,32 +63,12 @@ const Login = () => {
       [e.target.name]: e.target.value
     });
     if (error) setError('');
-  };
-
-  const handleSendOtp = async () => {
-    if (!forgotPasswordData.email) {
-      setError('Please enter your email address');
-      return;
-    }
-
-    setOtpLoading(true);
-    setError('');
-
-    try {
-      // Simulate API call to send OTP
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      alert('OTP sent successfully to your email!');
-    } catch (err) {
-      setError('Failed to send OTP. Please try again.');
-    } finally {
-      setOtpLoading(false);
-    }
+    if (success) setSuccess('');
   };
 
   const handleUpdatePassword = async () => {
-    if (!forgotPasswordData.otp || !forgotPasswordData.newPassword) {
-      setError('Please enter both OTP and new password');
+    if (!forgotPasswordData.email || !forgotPasswordData.newPassword) {
+      setError('Please enter your email and new password');
       return;
     }
 
@@ -96,20 +77,35 @@ const Login = () => {
       return;
     }
 
+    if (!forgotPasswordData.secretCode) {
+      setError('Please enter the secret code provided by the system');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
+    setSuccess('');
 
     try {
-      // Simulate API call to verify OTP and update password
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      alert('Password updated successfully!');
-      
-      // Reset forgot password state and go back to login
+      const response = await resetAdminPassword(
+        forgotPasswordData.email.trim(),
+        forgotPasswordData.newPassword,
+        forgotPasswordData.secretCode.trim()
+      );
+      const responseData = response.data;
+
+      if (!responseData?.success) {
+        throw new Error(responseData?.message || 'Failed to reset password');
+      }
+
+      setSuccess(responseData.message || 'Password reset successfully!');
+
+      // Reset state and return to login screen
+      setForgotPasswordData({ ...initialForgotPasswordState });
       setShowForgotPassword(false);
-      setForgotPasswordData({ email: '', otp: '', newPassword: '' });
+      setShowNewPassword(false);
     } catch (err) {
-      setError('Failed to update password. Please check your OTP.');
+      setError(err.response?.data?.message || err.message || 'Failed to reset password. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -118,12 +114,17 @@ const Login = () => {
   const handleForgotPassword = () => {
     setShowForgotPassword(true);
     setError('');
+    setSuccess('');
+    setForgotPasswordData({ ...initialForgotPasswordState });
+    setShowNewPassword(false);
   };
 
   const handleBackToLogin = () => {
     setShowForgotPassword(false);
-    setForgotPasswordData({ email: '', otp: '', newPassword: '' });
+    setForgotPasswordData({ ...initialForgotPasswordState });
     setError('');
+    setSuccess('');
+    setShowNewPassword(false);
   };
 
   return (
@@ -256,48 +257,37 @@ const Login = () => {
             </div>
 
             <div className="space-y-4">
-              {/* Email with Send OTP Button */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Email Address
-                </label>
-                <div className="flex space-x-3">
-                  <input
-                    name="email"
-                    type="email"
-                    required
-                    className="flex-1 px-4 py-3 border border-gray-600 placeholder-gray-400 text-white bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 sm:text-sm"
-                    placeholder="Enter your email"
-                    value={forgotPasswordData.email}
-                    onChange={handleForgotPasswordChange}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSendOtp}
-                    disabled={otpLoading}
-                    className="px-6 py-3 bg-primary cursor-pointer bg-yellow-300 text-black font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                  >
-                    {otpLoading ? 'Sending...' : 'Send OTP'}
-                  </button>
-                </div>
-              </div>
-
-              {/* OTP Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  OTP
+                  Admin Email
                 </label>
                 <input
-                  name="otp"
-                  type="text"
+                  name="email"
+                  type="email"
+                  required
                   className="w-full px-4 py-3 border border-gray-600 placeholder-gray-400 text-white bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 sm:text-sm"
-                  placeholder="Enter OTP"
-                  value={forgotPasswordData.otp}
+                  placeholder="Enter admin email"
+                  value={forgotPasswordData.email}
                   onChange={handleForgotPasswordChange}
                 />
               </div>
 
-              {/* New Password Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Secret Code
+                </label>
+                <input
+                  name="secretCode"
+                  type="password"
+                  required
+                  className="w-full px-4 py-3 border border-gray-600 placeholder-gray-400 text-white bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 sm:text-sm"
+                  placeholder="Enter secret code"
+                  value={forgotPasswordData.secretCode}
+                  onChange={handleForgotPasswordChange}
+                  autoComplete="off"
+                />
+              </div>
+
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   New Password
@@ -306,6 +296,9 @@ const Login = () => {
                   <input
                     name="newPassword"
                     type={showNewPassword ? "text" : "password"}
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
                     className="w-full px-4 py-3 border border-gray-600 placeholder-gray-400 text-white bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 sm:text-sm"
                     placeholder="Enter new password"
                     value={forgotPasswordData.newPassword}
@@ -327,16 +320,23 @@ const Login = () => {
                 </div>
               </div>
 
-              {/* Update Password Button */}
+              {/* Reset Password Button */}
               <button
                 type="button"
                 onClick={handleUpdatePassword}
                 disabled={isLoading}
                 className="w-full py-3 px-4 bg-primary cursor-pointer bg-yellow-300 text-black font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Updating...' : 'Update Password'}
+                {isLoading ? 'Updating...' : 'Reset Password'}
               </button>
             </div>
+
+            {/* Success message */}
+            {success && (
+              <div className="bg-green-900 border border-green-700 text-green-300 px-4 py-3 rounded-lg text-sm">
+                {success}
+              </div>
+            )}
 
             {/* Error message */}
             {error && (

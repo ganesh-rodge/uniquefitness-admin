@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { createDietPlanAdmin } from '../api';
 
+const PURPOSE_OPTIONS = ['gain', 'loose', 'maintain'];
+const CATEGORY_OPTIONS = ['eggetarian', 'vegetarian', 'non-vegetarian'];
+
 const CreateDietPlan = () => {
+
   const navigate = useNavigate();
   const [mode, setMode] = useState('single'); // single | multi | raw
   const [purpose, setPurpose] = useState('');
@@ -16,7 +20,7 @@ const CreateDietPlan = () => {
     { category: '', plan: [{ time: '', items: '', nutrition: { calories: '', protein: '', carbs: '', fat: '' } }] }
   ]);
 
-  const [rawJson, setRawJson] = useState('[\n  {\n    "purpose": "Weight Loss",\n    "categories": [\n      {\n        "category": "Vegetarian",\n        "plan": [\n          {\n            "time": "breakfast",\n            "items": "Oats + Apple + Raisins",\n            "nutrition": { "calories": 300, "protein": "6g", "carbs": "58g", "fat": "3g" }\n          }\n        ]\n      }\n    ]\n  }\n]');
+  const [rawJson, setRawJson] = useState('[\n  {\n    "purpose": "gain",\n    "categories": [\n      {\n        "category": "vegetarian",\n        "plan": [\n          {\n            "time": "breakfast",\n            "items": "Oats + Apple + Raisins",\n            "nutrition": { "calories": 300, "protein": "6g", "carbs": "58g", "fat": "3g" }\n          }\n        ]\n      }\n    ]\n  }\n]');
 
   const addPlanItem = () => {
     setPlanItems([...planItems, { time: '', items: '', nutrition: { calories: '', protein: '', carbs: '', fat: '' } }]);
@@ -136,12 +140,32 @@ const CreateDietPlan = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm mb-2">Purpose</label>
-              <input className="w-full px-4 py-2 bg-gray-800 rounded" value={purpose} onChange={e => setPurpose(e.target.value)} required />
+              <select
+                className="w-full px-4 py-2 bg-gray-800 rounded"
+                value={purpose}
+                onChange={e => setPurpose(e.target.value)}
+                required
+              >
+                <option value="" disabled>Select purpose</option>
+                {PURPOSE_OPTIONS.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
             </div>
             {mode === 'single' && (
               <div>
                 <label className="block text-sm mb-2">Category</label>
-                <input className="w-full px-4 py-2 bg-gray-800 rounded" value={category} onChange={e => setCategory(e.target.value)} required />
+                <select
+                  className="w-full px-4 py-2 bg-gray-800 rounded"
+                  value={category}
+                  onChange={e => setCategory(e.target.value)}
+                  required
+                >
+                  <option value="" disabled>Select category</option>
+                  {CATEGORY_OPTIONS.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
               </div>
             )}
           </div>
@@ -174,7 +198,17 @@ const CreateDietPlan = () => {
             </div>
             {multiCategories.map((cat, cIdx) => (
               <div key={cIdx} className="mb-4">
-                <input className="px-3 py-2 bg-gray-800 rounded mb-2" placeholder="category" value={cat.category} onChange={e => updateCategory(cIdx, 'category', e.target.value)} />
+                <select
+                  className="px-3 py-2 bg-gray-800 rounded mb-2"
+                  value={cat.category}
+                  onChange={e => updateCategory(cIdx, 'category', e.target.value)}
+                  required
+                >
+                  <option value="" disabled>Select category</option>
+                  {CATEGORY_OPTIONS.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
                 {cat.plan.map((item, pIdx) => (
                   <div key={pIdx} className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
                     <input className="px-3 py-2 bg-gray-800 rounded" placeholder="time" value={item.time} onChange={e => updateCategoryPlanItem(cIdx, pIdx, 'time', e.target.value)} />

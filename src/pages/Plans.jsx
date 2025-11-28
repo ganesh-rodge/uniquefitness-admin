@@ -11,7 +11,8 @@ const Plans = () => {
     name: '',
     price: '',
     duration: '',
-    status: 'active'
+    status: 'active',
+    branch: '',
   });
 
   useEffect(() => {
@@ -22,11 +23,13 @@ const Plans = () => {
     try {
       setLoading(true);
       const res = await getMembershipPlans();
-      if (res.data && res.data.success && Array.isArray(res.data.message)) {
-        setPlans(res.data.message);
+      if (res.data && res.data.success) {
+        const { data: plansData } = res.data;
+        const plansArray = Array.isArray(plansData) ? plansData : [];
+        setPlans(plansArray);
       } else {
         setPlans([]);
-        toast.error(res.data?.data || 'Failed to fetch plans');
+        toast.error(res.data?.message || 'Failed to fetch plans');
       }
     } catch (error) {
       setPlans([]);
@@ -39,7 +42,9 @@ const Plans = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.name.trim() || !formData.price || !formData.duration) {
+    const branchValue = (formData.branch || '').toLowerCase();
+
+    if (!formData.name.trim() || !formData.price || !formData.duration || !branchValue) {
       alert('Please fill in all required fields');
       return;
     }
@@ -56,33 +61,33 @@ const Plans = () => {
 
     try {
       const payload = {
-        name: formData.name,
-        price: parseInt(formData.price),
-        duration: parseInt(formData.duration),
-        status: formData.status
+        name: formData.name.trim(),
+        price: parseInt(formData.price, 10),
+        duration: parseInt(formData.duration, 10),
+        status: formData.status,
+        branch: branchValue,
       };
       if (editingPlan) {
         const res = await updateMembershipPlan(editingPlan._id, payload);
-        if (res.data && res.data.success && res.data.message) {
-          // Use backend response to update local state
-          setPlans(plans.map(plan => plan._id === editingPlan._id ? res.data.message : plan));
+        if (res.data && res.data.success && res.data.data) {
+          setPlans(plans.map(plan => plan._id === editingPlan._id ? res.data.data : plan));
           toast.success('Plan updated successfully');
-          setFormData({ name: '', price: '', duration: '', status: 'active' });
+          setFormData({ name: '', price: '', duration: '', status: 'active', branch: '' });
           setShowForm(false);
           setEditingPlan(null);
         } else {
-          toast.error(res.data?.data || 'Failed to update plan');
+          toast.error(res.data?.message || 'Failed to update plan');
         }
       } else {
         const res = await createMembershipPlan(payload);
-        if (res.data && res.data.success && res.data.message) {
-          setPlans([res.data.message, ...plans]);
+        if (res.data && res.data.success && res.data.data) {
+          setPlans([res.data.data, ...plans]);
           toast.success('Plan created successfully');
-          setFormData({ name: '', price: '', duration: '', status: 'active' });
+          setFormData({ name: '', price: '', duration: '', status: 'active', branch: '' });
           setShowForm(false);
           setEditingPlan(null);
         } else {
-          toast.error(res.data?.data || 'Failed to create plan');
+          toast.error(res.data?.message || 'Failed to create plan');
         }
       }
     } catch (error) {
@@ -97,7 +102,8 @@ const Plans = () => {
       name: plan.name,
       price: plan.price.toString(),
       duration: plan.duration.toString(),
-      status: plan.status
+      status: plan.status,
+      branch: (plan.branch || '').toLowerCase(),
     });
     setShowForm(true);
   };
@@ -123,7 +129,7 @@ const Plans = () => {
   const handleCancel = () => {
     setShowForm(false);
     setEditingPlan(null);
-    setFormData({ name: '', price: '', duration: '', status: 'active' });
+    setFormData({ name: '', price: '', duration: '', status: 'active', branch: '' });
   };
 
   const formatDate = (dateString) => {
@@ -238,6 +244,23 @@ const Plans = () => {
             </div>
 
             <div>
+              <label htmlFor="branch" className="block text-sm font-medium text-gray-300 mb-2">
+                Branch *
+              </label>
+              <select
+                id="branch"
+                value={formData.branch}
+                onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                required
+              >
+                <option value="">Select branch</option>
+                <option value="b1">B1</option>
+                <option value="b2">B2</option>
+              </select>
+            </div>
+
+            <div>
               <label htmlFor="status" className="block text-sm font-medium text-gray-300 mb-2">
                 Status
               </label>
@@ -289,18 +312,21 @@ const Plans = () => {
             >
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-xl font-semibold text-white mb-2">{plan.name || 'Unnamed Plan'}</h3>
+                  <h3 className="text-xl font-semibold text-white mb-1">{plan.name || 'Unnamed Plan'}</h3>
+                  {plan.branch && (
+                    <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Branch: {plan.branch.toUpperCase()}</p>
+                  )}
                   <div className="flex items-center space-x-2">
-                      <span className={`
+                    <span className={`
                         inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border
                         ${getStatusBadge(plan.status || 'inactive')}
                       `}>
-                        <div className={`
+                      <div className={`
                           w-2 h-2 rounded-full mr-2
                           ${(plan.status || 'inactive') === 'active' ? 'bg-green-400' : 'bg-red-400'}
                         `}></div>
-                        {(plan.status ? (plan.status.charAt(0).toUpperCase() + plan.status.slice(1)) : 'Inactive')}
-                      </span>
+                      {(plan.status ? (plan.status.charAt(0).toUpperCase() + plan.status.slice(1)) : 'Inactive')}
+                    </span>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -346,7 +372,7 @@ const Plans = () => {
                   </svg>
                   <span className="text-gray-300">Active Members</span>
                 </div>
-                <span className="text-white font-bold">{plan.membersCount}</span>
+                 <span className="text-white font-bold">{plan.membersCount ?? 0}</span>
               </div>
 
               {/* Date */}

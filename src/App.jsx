@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Members from './pages/Members';
+import CreateMember from './pages/CreateMember';
 import MemberDetails from './pages/MemberDetails';
 import Plans from './pages/Plans';
 import Announcements from './pages/Announcements';
@@ -11,6 +12,7 @@ import Layout from './components/Layout';
 import DietPlans from './pages/DietPlans';
 import CreateDietPlan from './pages/CreateDietPlan';
 import Workout from './pages/Workout';
+import Developer from './pages/Developer';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -56,6 +58,14 @@ export default function App() {
             <ProtectedRoute>
               <Layout>
                 <Members />
+              </Layout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/members/create" element={
+            <ProtectedRoute>
+              <Layout>
+                <CreateMember />
               </Layout>
             </ProtectedRoute>
           } />
@@ -112,6 +122,13 @@ export default function App() {
             <ProtectedRoute>
               <Layout>
                 <ChangePassword />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/developer" element={
+            <ProtectedRoute>
+              <Layout>
+                <Developer />
               </Layout>
             </ProtectedRoute>
           } />

@@ -61,6 +61,8 @@ const Sidebar = ({ isOpen, onClose }) => {
       ),
       path: '/workout'
     }
+    ,
+    // ...existing code...
   ];
 
   const handleNavigate = (path) => {
@@ -94,7 +96,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               </button>
             ))}
           </nav>
-          <div className="px-4 pb-4">
+          <div className="px-4 pb-2">
             <button
               onClick={handleLogout}
               className="w-full flex items-center px-4 py-3 rounded-lg text-red-400 hover:bg-gray-800 transition-all duration-200"
@@ -105,6 +107,15 @@ const Sidebar = ({ isOpen, onClose }) => {
                 </svg>
               </span>
               Logout
+            </button>
+          </div>
+          <div className="px-4 pb-4 text-center">
+            <button
+              onClick={() => handleNavigate('/developer')}
+              className="text-xs text-gray-400 hover:text-blue-400 underline"
+              style={{ background: 'none', border: 'none', padding: 0, margin: 0 }}
+            >
+              Developer Info
             </button>
           </div>
         </div>
@@ -127,7 +138,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               </button>
             ))}
           </nav>
-          <div className="px-4 pb-4">
+          <div className="px-4 pb-2">
             <button
               onClick={handleLogout}
               className="w-full flex items-center px-4 py-3 rounded-lg text-red-400 hover:bg-gray-800 transition-all duration-200"
@@ -138,6 +149,15 @@ const Sidebar = ({ isOpen, onClose }) => {
                 </svg>
               </span>
               Logout
+            </button>
+          </div>
+          <div className="px-4 pb-4 text-center">
+            <button
+              onClick={() => handleNavigate('/developer')}
+              className="text-xs text-gray-400 hover:text-blue-400 underline"
+              style={{ background: 'none', border: 'none', padding: 0, margin: 0 }}
+            >
+              Developer Info
             </button>
           </div>
         </div>

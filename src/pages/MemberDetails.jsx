@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getMemberById } from '../api';
+import { getMemberById, deleteMemberById } from '../api';
 import { toast } from 'react-toastify';
 
 const MemberDetails = () => {
@@ -85,14 +85,12 @@ const MemberDetails = () => {
     }
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      alert('Member deleted successfully!');
+      await deleteMemberById(member._id);
+      toast.success('Member deleted successfully!');
       navigate('/members');
     } catch (error) {
       console.error('Failed to delete member:', error);
-      alert('Failed to delete member');
+      toast.error(error.response?.data?.message || 'Failed to delete member');
     }
   };
 
