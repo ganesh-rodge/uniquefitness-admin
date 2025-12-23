@@ -16,12 +16,56 @@ const Members = () => {
     fetchMembers();
   }, []);
 
+  const deriveMembershipStatus = (member) => {
+    const fallbackStatus = typeof member?.membershipStatus === 'string' ? member.membershipStatus : null;
+    const membership = member?.membership;
+
+    if (!membership) {
+      return { status: fallbackStatus || 'inactive', daysRemaining: null };
+    }
+
+    if (!membership.endDate) {
+      return { status: fallbackStatus || 'active', daysRemaining: null };
+    }
+
+    const endDate = new Date(membership.endDate);
+    if (Number.isNaN(endDate.getTime())) {
+      return { status: fallbackStatus || 'active', daysRemaining: null };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const diffMs = endDate.getTime() - today.getTime();
+    const daysRemaining = Math.ceil(diffMs / msPerDay);
+
+    if (diffMs < 0) {
+      return { status: 'expired', daysRemaining: 0 };
+    }
+
+    if (daysRemaining <= 8) {
+      return { status: 'expiring', daysRemaining };
+    }
+
+    return { status: 'active', daysRemaining };
+  };
+
   const fetchMembers = async () => {
     try {
       setLoading(true);
       const res = await getMembers();
       if (res.data && res.data.success) {
-        setMembers(res.data.data || []);
+        const enhancedMembers = (res.data.data || []).map((member) => {
+          const { status, daysRemaining } = deriveMembershipStatus(member);
+          return {
+            ...member,
+            membershipStatus: status,
+            membershipDaysRemaining: daysRemaining,
+          };
+        });
+        setMembers(enhancedMembers);
       } else {
         toast.error(res.data?.message || 'Failed to fetch members.');
       }
@@ -33,22 +77,52 @@ const Members = () => {
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusText = (member) => {
+    const status = member?.membershipStatus;
+    const days = member?.membershipDaysRemaining;
+
     switch (status) {
-      case 'active': return 'green';
-      case 'expired': return 'red';
-      case 'expiring': return 'yellow';
-      default: return 'gray';
+      case 'active':
+        return 'Active';
+      case 'expired':
+        return 'Expired';
+      case 'expiring':
+        if (typeof days === 'number') {
+          return `Expiring Soon · ${days} day${days === 1 ? '' : 's'} left`;
+        }
+        return 'Expiring Soon';
+      case 'inactive':
+        return 'Inactive';
+      default:
+        return 'Unknown';
     }
   };
 
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'active': return 'Active';
-      case 'expired': return 'Expired';
-      case 'expiring': return 'Expiring Soon';
-      default: return 'Unknown';
-    }
+  const getStatusClasses = (status) => {
+    const styles = {
+      active: {
+        badge: 'bg-green-900 text-green-300 border border-green-700',
+        dot: 'bg-green-400',
+      },
+      expired: {
+        badge: 'bg-red-900 text-red-300 border border-red-700',
+        dot: 'bg-red-400',
+      },
+      expiring: {
+        badge: 'bg-yellow-900 text-yellow-300 border border-yellow-700',
+        dot: 'bg-yellow-400',
+      },
+      inactive: {
+        badge: 'bg-gray-900 text-gray-300 border border-gray-700',
+        dot: 'bg-gray-400',
+      },
+      default: {
+        badge: 'bg-gray-900 text-gray-300 border border-gray-700',
+        dot: 'bg-gray-400',
+      },
+    };
+
+    return styles[status] || styles.default;
   };
 
   const filteredMembers = members.filter(member => {
@@ -118,6 +192,7 @@ const Members = () => {
             <option value="active">Active</option>
             <option value="expired">Expired</option>
             <option value="expiring">Expiring Soon</option>
+            <option value="inactive">Inactive</option>
           </select>
         </div>
       </div>
@@ -133,58 +208,52 @@ const Members = () => {
             <p className="text-gray-500">Try adjusting your search or filters</p>
           </div>
         ) : (
-          filteredMembers.map((member) => (
-            <div
-              key={member._id}
-              onClick={() => navigate(`/members/${member._id}`)}
-              className="bg-gray-900 border border-gray-700 rounded-lg p-6 hover:border-primary cursor-pointer transition-all duration-200 transform hover:scale-105 animate-fade-in"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                {/* Profile Photo */}
-                <div className="flex-shrink-0">
-                  <img
-                    className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-gray-700"
-                    src={member.livePhotoUrl}
-                    alt={member.fullName}
-                  />
-                </div>
+          filteredMembers.map((member) => {
+            const { badge, dot } = getStatusClasses(member.membershipStatus);
 
-                {/* Member Info */}
-                <div className="flex-1">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-white">{member.fullName}</h3>
-                      <p className="text-gray-400 text-sm">{member.email}</p>
-                      <p className="text-gray-400 text-sm">Phone: {member.phone}</p>
-                    </div>
-                    
-                    <div className="mt-3 sm:mt-0 flex items-center gap-3 flex-wrap">
-                      {/* Status Badge */}
-                      <span className={`
-                        inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
-                        ${member.membershipStatus === 'active' ? 'bg-green-900 text-green-300' : ''}
-                        ${member.membershipStatus === 'expired' ? 'bg-red-900 text-red-300' : ''}
-                        ${member.membershipStatus === 'expiring' ? 'bg-yellow-900 text-yellow-300' : ''}
-                      `}>
-                        <div className={`
-                          w-2 h-2 rounded-full mr-2
-                          ${member.membershipStatus === 'active' ? 'bg-green-400' : ''}
-                          ${member.membershipStatus === 'expired' ? 'bg-red-400' : ''}
-                          ${member.membershipStatus === 'expiring' ? 'bg-yellow-400' : ''}
-                        `}></div>
-                        {getStatusText(member.membershipStatus)}
-                      </span>
+            return (
+              <div
+                key={member._id}
+                onClick={() => navigate(`/members/${member._id}`)}
+                className="bg-gray-900 border border-gray-700 rounded-lg p-6 hover:border-primary cursor-pointer transition-all duration-200 transform hover:scale-105 animate-fade-in"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  {/* Profile Photo */}
+                  <div className="flex-shrink-0">
+                    <img
+                      className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-gray-700"
+                      src={member.livePhotoUrl}
+                      alt={member.fullName}
+                    />
+                  </div>
 
-                      {/* View Details Arrow */}
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
+                  {/* Member Info */}
+                  <div className="flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-white">{member.fullName}</h3>
+                        <p className="text-gray-400 text-sm">{member.email}</p>
+                        <p className="text-gray-400 text-sm">Phone: {member.phone}</p>
+                      </div>
+                      
+                      <div className="mt-3 sm:mt-0 flex items-center gap-3 flex-wrap">
+                        {/* Status Badge */}
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${badge}`}>
+                          <div className={`w-2 h-2 rounded-full mr-2 ${dot}`}></div>
+                          {getStatusText(member)}
+                        </span>
+
+                        {/* View Details Arrow */}
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 

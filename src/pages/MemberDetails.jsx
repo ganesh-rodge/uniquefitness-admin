@@ -1,9 +1,47 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getMemberById, deleteMemberById } from '../api';
+import { getMemberById, deleteMemberById, getMembershipPlans, getMembershipPlanById, assignPlanToMember, updateMemberPlanAssignment, deleteMemberPlanAssignment } from '../api';
 import { toast } from 'react-toastify';
 
 const MemberDetails = () => {
+    const resolveMembershipPlanId = (membership) => {
+      if (!membership) {
+        return '';
+      }
+
+      const ensureString = (value) => {
+        if (typeof value === 'string') {
+          return value.trim();
+        }
+        if (value == null) {
+          return '';
+        }
+        if (typeof value === 'object') {
+          return '';
+        }
+        return String(value).trim();
+      };
+
+      const directPlan = ensureString(membership.plan);
+      if (directPlan) {
+        return directPlan;
+      }
+
+      if (membership.plan && typeof membership.plan === 'object') {
+        const nestedId = ensureString(membership.plan._id || membership.plan.id);
+        if (nestedId) {
+          return nestedId;
+        }
+      }
+
+      const explicitPlanId = ensureString(membership.planId);
+      if (explicitPlanId) {
+        return explicitPlanId;
+      }
+
+      return '';
+    };
+
   const { id } = useParams();
   const navigate = useNavigate();
   const [member, setMember] = useState(null);
@@ -11,10 +49,47 @@ const MemberDetails = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState({});
   const [activeTab, setActiveTab] = useState('personal');
+  const [planForm, setPlanForm] = useState({ planId: '', startDate: '' });
+  const [assigningPlan, setAssigningPlan] = useState(false);
+  const [removingPlan, setRemovingPlan] = useState(false);
+  const [plans, setPlans] = useState([]);
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [membershipPlanDetails, setMembershipPlanDetails] = useState(null);
+  const [planDetailsCache, setPlanDetailsCache] = useState({});
+  const memberPlanId = resolveMembershipPlanId(member?.membership);
+  const hasAssignedMembership = useMemo(() => {
+    if (!member?.membership) {
+      return false;
+    }
+    return Boolean(memberPlanId);
+  }, [member?.membership, memberPlanId]);
 
   useEffect(() => {
     fetchMemberDetails();
   }, [id]);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        setPlansLoading(true);
+        const res = await getMembershipPlans();
+        if (res.data && res.data.success) {
+          const fetchedPlans = Array.isArray(res.data.data) ? res.data.data : [];
+          setPlans(fetchedPlans);
+        } else {
+          setPlans([]);
+          toast.error(res.data?.message || 'Failed to fetch membership plans.');
+        }
+      } catch (error) {
+        setPlans([]);
+        toast.error(error.response?.data?.message || 'Failed to fetch membership plans.');
+      } finally {
+        setPlansLoading(false);
+      }
+    };
+
+    fetchPlans();
+  }, []);
 
   const fetchMemberDetails = async () => {
     try {
@@ -32,6 +107,10 @@ const MemberDetails = () => {
           address: foundMember.address,
           gender: foundMember.gender,
           dob: foundMember.dob.split('T')[0]
+        });
+        setPlanForm({
+          planId: resolveMembershipPlanId(foundMember.membership),
+          startDate: foundMember.membership?.startDate ? foundMember.membership.startDate.split('T')[0] : ''
         });
       } else {
         toast.error(res.data?.message || 'Failed to fetch member details.');
@@ -118,6 +197,7 @@ const MemberDetails = () => {
   const getStatusBadge = (status) => {
     const statusConfig = {
       active: 'bg-green-900 text-green-300 border-green-700',
+      expiring: 'bg-yellow-900 text-yellow-300 border-yellow-700',
       inactive: 'bg-gray-900 text-gray-300 border-gray-700',
       expired: 'bg-red-900 text-red-300 border-red-700'
     };
@@ -144,6 +224,207 @@ const MemberDetails = () => {
     const latest = member.weightHistory[member.weightHistory.length - 1].weight;
     const previous = member.weightHistory[member.weightHistory.length - 2].weight;
     return latest - previous;
+  };
+
+  useEffect(() => {
+    const loadMembershipPlanDetails = async () => {
+      if (!member?.membership) {
+        setMembershipPlanDetails(null);
+        return;
+      }
+
+      if (!memberPlanId) {
+        setMembershipPlanDetails(null);
+        return;
+      }
+
+      const cachedPlan = planDetailsCache[memberPlanId];
+      if (cachedPlan) {
+        setMembershipPlanDetails(cachedPlan);
+        return;
+      }
+
+      const catalogPlan = plans.find((plan) => plan._id === memberPlanId || plan.id === memberPlanId);
+      if (catalogPlan) {
+        setMembershipPlanDetails(catalogPlan);
+        setPlanDetailsCache((prev) => (prev[memberPlanId] ? prev : { ...prev, [memberPlanId]: catalogPlan }));
+
+        const hasPrice = catalogPlan.price != null;
+        const hasDuration = (catalogPlan.duration ?? catalogPlan.durationMonths) != null;
+        if (hasPrice && hasDuration) {
+          return;
+        }
+      }
+
+      try {
+        const res = await getMembershipPlanById(memberPlanId);
+        if (res.data && res.data.success && res.data.data) {
+          setMembershipPlanDetails(res.data.data);
+          setPlanDetailsCache((prev) => ({ ...prev, [memberPlanId]: res.data.data }));
+        } else {
+          setMembershipPlanDetails(catalogPlan || null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch membership plan details:', error);
+        setMembershipPlanDetails(catalogPlan || null);
+      }
+    };
+
+    loadMembershipPlanDetails();
+  }, [member?.membership, memberPlanId, plans, planDetailsCache]);
+
+  useEffect(() => {
+    const fetchSelectedPlanDetails = async () => {
+      if (!planForm.planId || planDetailsCache[planForm.planId]) {
+        return;
+      }
+
+      const planFromCatalog = plans.find((plan) => plan._id === planForm.planId || plan.id === planForm.planId);
+      if (planFromCatalog) {
+        setPlanDetailsCache((prev) => (prev[planForm.planId] ? prev : { ...prev, [planForm.planId]: planFromCatalog }));
+        const hasPrice = planFromCatalog.price != null;
+        const hasDuration = (planFromCatalog.duration ?? planFromCatalog.durationMonths) != null;
+        if (hasPrice && hasDuration) {
+          return;
+        }
+      }
+
+      try {
+        const res = await getMembershipPlanById(planForm.planId);
+        if (res.data && res.data.success && res.data.data) {
+          setPlanDetailsCache((prev) => ({ ...prev, [planForm.planId]: res.data.data }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch selected plan details:', error);
+      }
+    };
+
+    fetchSelectedPlanDetails();
+  }, [planForm.planId, planDetailsCache, plans]);
+
+  const branchPlans = useMemo(() => {
+    if (!member?.branch) {
+      return plans;
+    }
+    const branchKey = member.branch.toLowerCase();
+    return plans.filter((plan) => {
+      const planBranch = (plan.branch || '').toLowerCase();
+      return planBranch === branchKey || planBranch === 'all';
+    });
+  }, [member?.branch, plans]);
+
+  const selectedPlan = useMemo(() => {
+    const planIdValue = planForm.planId;
+    return plans.find((plan) => plan._id === planIdValue || plan.id === planIdValue) || null;
+  }, [plans, planForm.planId]);
+
+  const selectedPlanDetail = useMemo(() => {
+    if (!planForm.planId) {
+      return null;
+    }
+    return planDetailsCache[planForm.planId] || selectedPlan;
+  }, [planDetailsCache, planForm.planId, selectedPlan]);
+
+  const selectedPlanDurationValue = useMemo(() => {
+    if (!selectedPlanDetail) {
+      return null;
+    }
+    return selectedPlanDetail.duration ?? selectedPlanDetail.durationMonths ?? null;
+  }, [selectedPlanDetail]);
+
+  const memberPlanFromCatalog = useMemo(() => {
+    if (!member?.membership || !memberPlanId) {
+      return null;
+    }
+    return plans.find((plan) => plan._id === memberPlanId || plan.id === memberPlanId) || null;
+  }, [member?.membership, memberPlanId, plans]);
+
+  const autoEndDate = useMemo(() => {
+    if (!selectedPlanDetail || !planForm.startDate) {
+      return '';
+    }
+    const rawDuration = selectedPlanDurationValue;
+    if (rawDuration == null) {
+      return '';
+    }
+    const durationMonths = Number(rawDuration);
+    if (!Number.isFinite(durationMonths) || durationMonths <= 0) {
+      return '';
+    }
+    const start = new Date(`${planForm.startDate}T00:00:00`);
+    const end = new Date(start);
+    end.setMonth(end.getMonth() + durationMonths);
+    end.setDate(end.getDate() - 1);
+    return end.toISOString().split('T')[0];
+  }, [planForm.startDate, selectedPlanDetail, selectedPlanDurationValue]);
+
+  const resetMembershipForm = () => {
+    setPlanForm({ planId: '', startDate: '' });
+  };
+
+  const handleAssignMembership = async (event) => {
+    event.preventDefault();
+    if (assigningPlan) {
+      return;
+    }
+    if (!planForm.planId || !planForm.startDate) {
+      toast.error('Select a plan and a start date.');
+      return;
+    }
+    if (!selectedPlanDetail) {
+      toast.error('Selected plan is not available for this branch.');
+      return;
+    }
+
+    const formattedStartDate = new Date(`${planForm.startDate}T00:00:00`).toLocaleDateString('en-GB');
+    const payload = {
+      planId: selectedPlanDetail._id || selectedPlanDetail.id || planForm.planId,
+      startDate: formattedStartDate.replace(/\//g, '-'),
+    };
+
+    try {
+      setAssigningPlan(true);
+      if (hasAssignedMembership) {
+        await updateMemberPlanAssignment(member._id, payload);
+        toast.success('Plan updated successfully.');
+      } else {
+        await assignPlanToMember(member._id, payload);
+        toast.success('Plan assigned successfully.');
+      }
+      await fetchMemberDetails();
+      resetMembershipForm();
+    } catch (error) {
+      console.error('Failed to assign plan:', error);
+      toast.error(error.response?.data?.message || 'Failed to assign plan.');
+    } finally {
+      setAssigningPlan(false);
+    }
+  };
+
+  const handleRemoveMembership = async () => {
+    if (!member?.membership) {
+      toast.error('No membership assigned to remove.');
+      return;
+    }
+
+    const confirmation = window.confirm('Remove the current membership plan? This action cannot be undone.');
+    if (!confirmation) {
+      return;
+    }
+
+    try {
+      setRemovingPlan(true);
+      await deleteMemberPlanAssignment(member._id);
+      setMembershipPlanDetails(null);
+      toast.success('Membership plan removed successfully.');
+      await fetchMemberDetails();
+      resetMembershipForm();
+    } catch (error) {
+      console.error('Failed to remove membership plan:', error);
+      toast.error(error.response?.data?.message || 'Failed to remove membership plan.');
+    } finally {
+      setRemovingPlan(false);
+    }
   };
 
   if (loading) {
@@ -177,18 +458,27 @@ const MemberDetails = () => {
     );
   }
 
+  const resolvedPlanDetails = membershipPlanDetails
+    || memberPlanFromCatalog
+    || (memberPlanId ? planDetailsCache[memberPlanId] : null);
+  const assignedPlanName = resolvedPlanDetails?.name || member.membership?.planName || member.membership?.name || '';
+  const assignedPlanBranch = (resolvedPlanDetails?.branch || member.membership?.branch || member.branch || 'N/A').toString();
+  const assignedPlanPrice = resolvedPlanDetails?.price ?? member.membership?.price;
+  const assignedPlanDuration = (resolvedPlanDetails?.duration ?? resolvedPlanDetails?.durationMonths ?? member.membership?.duration ?? member.membership?.durationMonths);
+
   const tabs = [
     { id: 'personal', label: 'Personal Info', icon: '👤' },
     { id: 'workout', label: 'Workout Schedule', icon: '💪' },
     { id: 'weight', label: 'Weight History', icon: '📊' },
-    { id: 'photos', label: 'Photos', icon: '📷' }
+    { id: 'photos', label: 'Photos', icon: '📷' },
+    { id: 'membership', label: 'Membership Plan', icon: '🪪' }
   ];
 
   return (
     <div className="min-h-screen bg-gray-800">
       {/* Header */}
-      <div className="bg-gray-900 border-b border-gray-700 p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div className="bg-gray-900 border-b border-gray-700">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center">
             <button
               onClick={() => navigate('/members')}
@@ -208,7 +498,8 @@ const MemberDetails = () => {
                   <div className={`
                     w-2 h-2 rounded-full mr-2
                     ${member.membership?.status === 'active' ? 'bg-green-400' : 
-                      member.membership?.status === 'expired' ? 'bg-red-400' : 'bg-gray-400'}
+                      member.membership?.status === 'expired' ? 'bg-red-400' : 
+                      member.membership?.status === 'expiring' ? 'bg-yellow-400' : 'bg-gray-400'}
                   `}></div>
                   {member.membership?.status
                     ? member.membership.status.charAt(0).toUpperCase() + member.membership.status.slice(1)
@@ -237,7 +528,7 @@ const MemberDetails = () => {
 
       {/* Tabs */}
       <div className="border-b border-gray-700">
-        <div className="px-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-8">
             {tabs.map((tab) => (
               <button
@@ -260,11 +551,11 @@ const MemberDetails = () => {
       </div>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {activeTab === 'personal' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Basic Information */}
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6">
+            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 shadow-lg">
               <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
                 <svg className="w-5 h-5 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -300,7 +591,7 @@ const MemberDetails = () => {
             </div>
 
             {/* Contact Information */}
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6">
+            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 shadow-lg">
               <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
                 <svg className="w-5 h-5 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -330,7 +621,7 @@ const MemberDetails = () => {
             </div>
 
             {/* Physical Stats */}
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6">
+            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 shadow-lg">
               <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
                 <svg className="w-5 h-5 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -360,7 +651,7 @@ const MemberDetails = () => {
             </div>
 
             {/* Account Information */}
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6">
+            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 shadow-lg">
               <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
                 <svg className="w-5 h-5 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -394,7 +685,7 @@ const MemberDetails = () => {
         )}
 
         {activeTab === 'workout' && (
-          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 shadow-lg">
             <h3 className="text-lg font-semibold text-white mb-6 flex items-center">
               <svg className="w-5 h-5 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -426,7 +717,7 @@ const MemberDetails = () => {
         )}
 
         {activeTab === 'weight' && (
-          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 shadow-lg">
             <h3 className="text-lg font-semibold text-white mb-6 flex items-center">
               <svg className="w-5 h-5 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -473,7 +764,7 @@ const MemberDetails = () => {
 
         {activeTab === 'photos' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6">
+            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 shadow-lg">
               <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
                 <svg className="w-5 h-5 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -493,7 +784,7 @@ const MemberDetails = () => {
               )}
             </div>
             
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6">
+            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 shadow-lg">
               <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
                 <svg className="w-5 h-5 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -512,6 +803,294 @@ const MemberDetails = () => {
                   <p className="text-gray-400">No live photo available</p>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'membership' && (
+          <div className="space-y-6">
+            <div className="relative rounded-2xl border border-gray-700 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 shadow-xl overflow-hidden">
+              <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-primary/5 via-transparent to-red-500/5" />
+              <div className="relative flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 p-6 lg:p-8">
+                <div className="flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+                    <h3 className="text-lg font-semibold text-white flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c1.38 0 2.5-1.12 2.5-2.5S13.38 6 12 6 9.5 7.12 9.5 8.5 10.62 11 12 11zm0 0c-3.59 0-6.5 2.91-6.5 6.5V19a1 1 0 001 1h11a1 1 0 001-1v-1.5c0-3.59-2.91-6.5-6.5-6.5z" />
+                      </svg>
+                      Current Membership
+                    </h3>
+                    {member.membership && (
+                      <button
+                        onClick={handleRemoveMembership}
+                        type="button"
+                        disabled={removingPlan}
+                        className={`inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 ${removingPlan ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-red-600/90 hover:bg-red-600 text-white shadow-lg shadow-red-900/40'}`}
+                      >
+                        {removingPlan ? (
+                          'Removing...'
+                        ) : (
+                          <span className="flex items-center">
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Remove Plan
+                          </span>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-gray-400 text-sm mb-4">
+                    Review the member’s current plan, benefits, and key dates in one place.
+                  </p>
+                  {member.membership ? (
+                    <div className="space-y-4">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className={`
+                          inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border
+                          ${getStatusBadge(member.membership.status)}
+                        `}>
+                          <div className={`
+                            w-2 h-2 rounded-full mr-2
+                            ${member.membership.status === 'active' ? 'bg-green-400' :
+                              member.membership.status === 'expired' ? 'bg-red-400' :
+                              member.membership.status === 'expiring' ? 'bg-yellow-400' : 'bg-gray-400'}
+                          `}></div>
+                          {member.membership.status ? member.membership.status.charAt(0).toUpperCase() + member.membership.status.slice(1) : 'Unknown'}
+                        </span>
+                        {assignedPlanName && (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary bg-opacity-10 text-primary border border-primary border-opacity-30">
+                            {assignedPlanName}
+                          </span>
+                        )}
+                        {membershipPlanDetails?.status && (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-800 text-gray-200 border border-gray-600">
+                            Plan {membershipPlanDetails.status.charAt(0).toUpperCase() + membershipPlanDetails.status.slice(1)}
+                          </span>
+                        )}
+                      </div>
+                      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <dt className="text-gray-400 uppercase tracking-wide">Plan Name</dt>
+                          <dd className="text-white mt-1 text-base">
+                            {assignedPlanName || 'Not assigned'}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-gray-400 uppercase tracking-wide">Branch</dt>
+                          <dd className="text-white mt-1 text-base">
+                            {assignedPlanBranch ? assignedPlanBranch.toUpperCase() : 'N/A'}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-gray-400 uppercase tracking-wide">Start Date</dt>
+                          <dd className="text-white mt-1 text-base">
+                            {member.membership.startDate ? formatDate(member.membership.startDate) : 'Not set'}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-gray-400 uppercase tracking-wide">End Date</dt>
+                          <dd className="text-white mt-1 text-base">
+                            {member.membership.endDate ? formatDate(member.membership.endDate) : 'Not set'}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-gray-400 uppercase tracking-wide">Price</dt>
+                          <dd className="text-white mt-1 text-base">
+                            {assignedPlanPrice != null ? `₹${assignedPlanPrice}` : 'Not set'}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-gray-400 uppercase tracking-wide">Duration</dt>
+                          <dd className="text-white mt-1 text-base">
+                            {assignedPlanDuration ? `${assignedPlanDuration} month(s)` : 'Not set'}
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-800 border border-dashed border-gray-600 rounded-lg p-6 text-center">
+                      <svg className="w-10 h-10 text-gray-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-3-3v6m9 3a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h5l2-2h5a2 2 0 012 2v12z" />
+                      </svg>
+                      <p className="text-gray-300 font-medium">No plan assigned yet</p>
+                      <p className="text-gray-500 text-sm mt-1">Use the assignment panel to stage a plan for this member.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="w-full lg:w-80">
+                  <div className="h-full rounded-xl border border-gray-700 bg-gray-900/90 p-5 shadow-lg">
+                    <h4 className="text-md font-semibold text-white mb-4 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7l9-4 9 4-9 4-9-4zm0 6l9 4 9-4" />
+                      </svg>
+                      Branch Snapshot
+                    </h4>
+                    <div className="space-y-4 text-sm">
+                      <div className="flex items-start justify-between">
+                        <div className="text-gray-400">Member Branch</div>
+                        <div className="text-white font-medium">{member.branch ? member.branch.toUpperCase() : 'N/A'}</div>
+                      </div>
+                      <div className="flex items-start justify-between">
+                        <div className="text-gray-400">Plans Available</div>
+                        <div className="text-white font-medium">{branchPlans.length}</div>
+                      </div>
+                      <div className="rounded-lg border border-gray-700 bg-gray-800/70 p-3 text-xs text-gray-400 space-y-2">
+                        <div className="flex items-center">
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary mr-2 text-xs font-semibold">i</span>
+                          Plans list adapts automatically to the member’s branch.
+                        </div>
+                        <div className="flex items-center">
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500/20 text-green-300 mr-2 text-xs font-semibold">✓</span>
+                          Highlights surface once you pick a plan.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <div className="xl:col-span-2 bg-gray-900 border border-gray-700 rounded-xl p-6 shadow-lg">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 1.343-3 3v5h6v-5c0-1.657-1.343-3-3-3zm0 0V5m0 13h.01M5 13a7 7 0 0114 0v5a2 2 0 01-2 2H7a2 2 0 01-2-2v-5z" />
+                  </svg>
+                  Assign Membership Plan
+                </h3>
+                <p className="text-gray-400 text-sm mb-6">
+                  Assign the right membership plan and choose when it begins; the end date is calculated automatically.
+                </p>
+
+                <form className="space-y-5" onSubmit={handleAssignMembership}>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Select Plan</label>
+                    <select
+                      value={planForm.planId}
+                      onChange={(event) => setPlanForm((prev) => ({ ...prev, planId: event.target.value }))}
+                      className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                    >
+                      <option value="">Choose a plan for {member.branch ? member.branch.toUpperCase() : 'this branch'}</option>
+                      {branchPlans.map((plan) => {
+                        const optionId = plan._id || plan.id;
+                        const cachedDetail = planDetailsCache[optionId];
+                        const optionDuration = plan.duration ?? plan.durationMonths ?? cachedDetail?.duration ?? cachedDetail?.durationMonths;
+                        const optionPrice = plan.price ?? cachedDetail?.price;
+                        return (
+                          <option key={optionId} value={optionId}>
+                            {plan.name} • {optionPrice != null ? `₹${optionPrice}` : '₹—'} • {optionDuration != null ? `${optionDuration} month(s)` : 'Duration unknown'}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    {branchPlans.length === 0 && (
+                      <p className="text-xs text-red-300 mt-2">No plans are listed for this branch yet.</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Start Date *</label>
+                    <input
+                      type="date"
+                      value={planForm.startDate}
+                      onChange={(event) => setPlanForm((prev) => ({ ...prev, startDate: event.target.value }))}
+                      className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                      required
+                    />
+                    {autoEndDate && (
+                      <p className="text-xs text-gray-500 mt-1">Suggested end date: {autoEndDate}.</p>
+                    )}
+                  </div>
+
+                  {selectedPlanDetail && (
+                    <div className="bg-gray-800 border border-gray-600 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-white mb-2">Plan Highlights</h4>
+                      <div className="text-sm text-gray-300 space-y-1">
+                        <p>Duration: {selectedPlanDurationValue != null ? `${selectedPlanDurationValue} month(s)` : 'Duration unknown'}</p>
+                        <p>Price: {selectedPlanDetail.price != null ? `₹${selectedPlanDetail.price}` : 'Price unavailable'}</p>
+                        <p>Branch: {!selectedPlanDetail.branch
+                          ? 'Not specified'
+                          : selectedPlanDetail.branch === 'all'
+                            ? 'All branches'
+                            : selectedPlanDetail.branch.toUpperCase()}</p>
+                        {selectedPlanDetail.perks && selectedPlanDetail.perks.length > 0 && (
+                          <ul className="list-disc list-inside text-xs text-gray-400 pt-1">
+                            {selectedPlanDetail.perks.map((perk) => (
+                              <li key={perk}>{perk}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={resetMembershipForm}
+                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium rounded-lg transition-colors duration-200"
+                    >
+                      Reset
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={assigningPlan}
+                      className={`px-4 py-2 font-medium rounded-lg transition-colors duration-200 ${assigningPlan ? 'bg-yellow-200 text-gray-500 cursor-not-allowed' : 'bg-primary bg-yellow-300 text-gray-900'}`}
+                    >
+                      {assigningPlan ? 'Assigning...' : 'Assign Plan'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div className="space-y-6">
+                <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 shadow-lg">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 17l-4 4m0 0l-4-4m4 4V3" />
+                    </svg>
+                    Available Plans Preview
+                  </h3>
+                  <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
+                    {branchPlans.length > 0 ? (
+                      branchPlans.map((plan) => {
+                        const previewPlanId = plan._id || plan.id;
+                        const cachedDetail = planDetailsCache[previewPlanId];
+                        const previewDuration = plan.duration ?? plan.durationMonths ?? cachedDetail?.duration ?? cachedDetail?.durationMonths;
+                        const previewPrice = plan.price ?? cachedDetail?.price;
+                        const previewPerks = (Array.isArray(plan.perks) && plan.perks.length > 0)
+                          ? plan.perks
+                          : (Array.isArray(cachedDetail?.perks) ? cachedDetail.perks : []);
+                        return (
+                          <div key={previewPlanId} className={`border rounded-lg p-4 ${previewPlanId === planForm.planId ? 'border-primary bg-gray-800 bg-opacity-50' : 'border-gray-700 bg-gray-800'}`}>
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <p className="text-white font-semibold">{plan.name}</p>
+                                <p className="text-xs text-gray-500 uppercase mt-1">Duration: {previewDuration != null ? `${previewDuration} month(s)` : 'Duration unknown'}</p>
+                              </div>
+                              <span className="text-primary font-semibold">{previewPrice != null ? `₹${previewPrice}` : '₹—'}</span>
+                            </div>
+                            {previewPerks.length > 0 && (
+                              <ul className="list-disc list-inside text-xs text-gray-400 mt-3 space-y-1">
+                                {previewPerks.map((perk) => (
+                                  <li key={perk}>{perk}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="bg-gray-800 border border-dashed border-gray-600 rounded-lg p-5 text-center text-sm text-gray-400">
+                        No plans are available for preview right now.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
             </div>
           </div>
         )}

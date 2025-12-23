@@ -36,6 +36,7 @@ const CreateDietPlan = () => {
     }
     setPlanItems(next);
   };
+  const TIME_OPTIONS = ['breakfast', 'lunch', 'snacks', 'dinner'];
 
   const addCategory = () => {
     setMultiCategories([...multiCategories, { category: '', plan: [{ time: '', items: '', nutrition: { calories: '', protein: '', carbs: '', fat: '' } }] }]);
@@ -179,7 +180,17 @@ const CreateDietPlan = () => {
             </div>
             {planItems.map((item, idx) => (
               <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
-                <input className="px-3 py-2 bg-gray-800 rounded" placeholder="time" value={item.time} onChange={e => updatePlanItem(idx, 'time', e.target.value)} />
+                <select
+                  className="px-3 py-2 bg-gray-800 rounded"
+                  value={item.time}
+                  onChange={e => updatePlanItem(idx, 'time', e.target.value)}
+                  required
+                >
+                  <option value="" disabled>Select time</option>
+                  {TIME_OPTIONS.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
                 <input className="px-3 py-2 bg-gray-800 rounded md:col-span-2" placeholder="items" value={item.items} onChange={e => updatePlanItem(idx, 'items', e.target.value)} />
                 <input className="px-3 py-2 bg-gray-800 rounded" placeholder="calories" type="number" value={item.nutrition.calories} onChange={e => updatePlanItem(idx, 'nutrition.calories', e.target.value)} />
                 <input className="px-3 py-2 bg-gray-800 rounded" placeholder="protein" value={item.nutrition.protein} onChange={e => updatePlanItem(idx, 'nutrition.protein', e.target.value)} />
@@ -211,7 +222,17 @@ const CreateDietPlan = () => {
                 </select>
                 {cat.plan.map((item, pIdx) => (
                   <div key={pIdx} className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
-                    <input className="px-3 py-2 bg-gray-800 rounded" placeholder="time" value={item.time} onChange={e => updateCategoryPlanItem(cIdx, pIdx, 'time', e.target.value)} />
+                    <select
+                      className="px-3 py-2 bg-gray-800 rounded"
+                      value={item.time}
+                      onChange={e => updateCategoryPlanItem(cIdx, pIdx, 'time', e.target.value)}
+                      required
+                    >
+                      <option value="" disabled>Select time</option>
+                      {TIME_OPTIONS.map(option => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
                     <input className="px-3 py-2 bg-gray-800 rounded md:col-span-2" placeholder="items" value={item.items} onChange={e => updateCategoryPlanItem(cIdx, pIdx, 'items', e.target.value)} />
                     <input className="px-3 py-2 bg-gray-800 rounded" placeholder="calories" type="number" value={item.nutrition.calories} onChange={e => updateCategoryPlanItem(cIdx, pIdx, 'nutrition.calories', e.target.value)} />
                     <input className="px-3 py-2 bg-gray-800 rounded" placeholder="protein" value={item.nutrition.protein} onChange={e => updateCategoryPlanItem(cIdx, pIdx, 'nutrition.protein', e.target.value)} />

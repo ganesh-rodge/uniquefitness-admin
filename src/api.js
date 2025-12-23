@@ -34,6 +34,16 @@ export const getMembershipPlans = async () => {
     },
   });
 };
+
+// Get single membership plan by ID
+export const getMembershipPlanById = async (id) => {
+  const token = localStorage.getItem('authToken');
+  return api.get(`/membership/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
 // Delete announcement by ID
 export const deleteAnnouncement = async (id) => {
   const token = localStorage.getItem('authToken');
@@ -75,6 +85,36 @@ export const getMembers = async () => {
 export const getMemberById = async (id) => {
   const token = localStorage.getItem('authToken');
   return api.get(`/admin/member/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+// Assign membership plan to member by ID
+export const assignPlanToMember = async (memberId, payload) => {
+  const token = localStorage.getItem('authToken');
+  return api.post(`/admin/member/${memberId}/assign-plan`, payload, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+// Update existing membership plan assignment for member by ID
+export const updateMemberPlanAssignment = async (memberId, payload) => {
+  const token = localStorage.getItem('authToken');
+  return api.patch(`/admin/member/${memberId}/assign-plan`, payload, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+// Remove membership plan from member by ID
+export const deleteMemberPlanAssignment = async (memberId) => {
+  const token = localStorage.getItem('authToken');
+  return api.delete(`/admin/member/${memberId}/assign-plan`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
