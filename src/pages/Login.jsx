@@ -132,11 +132,9 @@ const Login = () => {
       <div className="max-w-md w-full space-y-8 animate-fade-in">
         {/* Logo */}
         <div className="text-center">
-          <img
-            className="mx-auto h-16 w-auto mb-4"
-            src="/logoFull.jpeg"
-            alt="Unique Fitness"
-          />
+          <div className="mx-auto h-16 w-48 mb-4 flex items-center justify-center rounded-xl border-2 border-dashed border-gray-600 bg-gray-800 text-gray-400 text-sm font-medium">
+            Your Logo
+          </div>
           <h2 className="text-3xl font-bold text-white mb-2">
             Admin Panel
           </h2>

@@ -100,11 +100,11 @@ const Dashboard = () => {
 
   const formattedLastUpdated = lastUpdated
     ? lastUpdated.toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-      })
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    })
     : null;
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -240,7 +240,7 @@ const Dashboard = () => {
         {/* Header */}
         <div className="mb-10">
           <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-          <p className="text-gray-400 mt-2">Welcome back! Here's what's happening at Unique Fitness.</p>
+          <p className="text-gray-400 mt-2">Welcome back! Here's what's happening at Gym Name.</p>
           {formattedLastUpdated && (
             <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-gray-700/60 bg-gray-900/70 px-3 py-1 text-xs text-gray-400">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -251,69 +251,69 @@ const Dashboard = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-10">
-        <StatCard
-          title="Total Members"
-          value={stats?.totalMembers || 0}
-          color="blue"
-          trend={5}
-          description="All registered members"
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          }
-        />
+          <StatCard
+            title="Total Members"
+            value={stats?.totalMembers || 0}
+            color="blue"
+            trend={5}
+            description="All registered members"
+            icon={
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            }
+          />
 
-        <StatCard
-          title="Active Members"
-          value={stats?.activeMembers || 0}
-          color="green"
-          trend={0}
-          description="Currently active"
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          }
-        />
+          <StatCard
+            title="Active Members"
+            value={stats?.activeMembers || 0}
+            color="green"
+            trend={0}
+            description="Currently active"
+            icon={
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            }
+          />
 
-        <StatCard
-          title="Expiring Soon"
-          value={stats?.expiringSoon || 0}
-          color="yellow"
-          trend={0}
-          description="Within 7 days"
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          }
-        />
+          <StatCard
+            title="Expiring Soon"
+            value={stats?.expiringSoon || 0}
+            color="yellow"
+            trend={0}
+            description="Within 7 days"
+            icon={
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            }
+          />
 
-        <StatCard
-          title="Expired Members"
-          value={stats?.expiredMembers || 0}
-          color="red"
-          trend={0}
-          description="Need renewal"
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          }
-        />
+          <StatCard
+            title="Expired Members"
+            value={stats?.expiredMembers || 0}
+            color="red"
+            trend={0}
+            description="Need renewal"
+            icon={
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            }
+          />
 
-        <StatCard
-          title="Inactive Members"
-          value={stats?.inactiveMembers ?? 0}
-          color="purple"
-          description="No plan assigned"
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9V5a1 1 0 011-1h2a1 1 0 011 1v4m0 0h3a1 1 0 011 1v2a1 1 0 01-1 1h-3m0 0v4a1 1 0 01-1 1h-2a1 1 0 01-1-1v-4m0 0H7a1 1 0 01-1-1v-2a1 1 0 011-1h3" />
-            </svg>
-          }
-        />
+          <StatCard
+            title="Inactive Members"
+            value={stats?.inactiveMembers ?? 0}
+            color="purple"
+            description="No plan assigned"
+            icon={
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9V5a1 1 0 011-1h2a1 1 0 011 1v4m0 0h3a1 1 0 011 1v2a1 1 0 01-1 1h-3m0 0v4a1 1 0 01-1 1h-2a1 1 0 01-1-1v-4m0 0H7a1 1 0 01-1-1v-2a1 1 0 011-1h3" />
+              </svg>
+            }
+          />
         </div>
 
         {/* Additional Dashboard Content */}
@@ -462,7 +462,7 @@ const Dashboard = () => {
             {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
           </button>
         </div>
-      {/* Add Member Modal */}
+        {/* Add Member Modal */}
       </div>
     </div>
   );

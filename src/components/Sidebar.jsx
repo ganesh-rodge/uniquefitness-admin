@@ -82,7 +82,9 @@ const Sidebar = ({ isOpen, onClose }) => {
       <div className="hidden lg:flex lg:flex-shrink-0 lg:w-64 bg-gray-900 border-r border-gray-700 h-screen">
         <div className="flex flex-col w-full h-full">
           <div className="flex items-center justify-center h-16 px-4 bg-gray-900 border-b border-gray-700">
-            <img src="/logoFull.jpeg" alt="Logo" className="h-10 w-auto rounded-lg" />
+            <div className="h-10 w-36 flex items-center justify-center rounded-lg border-2 border-dashed border-gray-600 bg-gray-800 text-gray-400 text-xs font-medium">
+              Your Logo
+            </div>
           </div>
           <nav className="flex-1 py-4 px-2 space-y-2 overflow-y-auto">
             {menuItems.map((item) => (
@@ -124,7 +126,9 @@ const Sidebar = ({ isOpen, onClose }) => {
       <div className={`fixed inset-0 z-50 flex lg:hidden transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="w-64 bg-gray-900 border-r border-gray-700 flex flex-col h-full">
           <div className="flex items-center justify-center h-16 px-4 bg-gray-900 border-b border-gray-700">
-            <img src="/logoFull.jpeg" alt="Logo" className="h-10 w-auto rounded-lg" />
+            <div className="h-10 w-36 flex items-center justify-center rounded-lg border-2 border-dashed border-gray-600 bg-gray-800 text-gray-400 text-xs font-medium">
+              Your Logo
+            </div>
           </div>
           <nav className="flex-1 py-4 px-2 space-y-2 overflow-y-auto">
             {menuItems.map((item) => (
